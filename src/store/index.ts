@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { CustomNode, FlowState, NodeType, NodeData } from '../types'
+import { CustomNode, FlowState, NodeType, NodeData, LayoutDirection } from '../types'
 import {
   addEdge,
   Connection,
@@ -10,12 +10,15 @@ import {
   NodeChange,
   EdgeChange,
   NodePositionChange,
+  ReactFlowInstance,
 } from 'reactflow'
 import { autoLayout as computeAutoLayout } from '../utils/layout'
-import { createHistorySlice } from './slices/history'
+import { createHistorySlice }   from './slices/history'
 import { createClipboardSlice } from './slices/clipboard'
-import { createTemplateSlice } from './slices/templates'
+import { createTemplateSlice }  from './slices/templates'
 import { createValidationSlice } from './slices/validation'
+import { createExecutionSlice } from './slices/execution'
+import { createVersionSlice }   from './slices/versions'
 
 const NODE_LABELS: Record<NodeType, string> = {
   input:      'Input',
@@ -28,7 +31,7 @@ const NODE_LABELS: Record<NodeType, string> = {
 }
 
 const initialNodes: CustomNode[] = []
-const initialEdges: Edge[] = []
+const initialEdges: Edge[]       = []
 
 export const useFlowStore = create<FlowState>()(
   persist(
@@ -37,11 +40,19 @@ export const useFlowStore = create<FlowState>()(
       ...createClipboardSlice(...a),
       ...createTemplateSlice(...a),
       ...createValidationSlice(...a),
+      ...createExecutionSlice(...a),
+      ...createVersionSlice(...a),
 
       workflowName: 'Untitled Workflow',
-      nodes: initialNodes,
-      edges: initialEdges,
+      nodes:          initialNodes,
+      edges:          initialEdges,
       selectedNodeId: null,
+      rfInstance:     null,
+
+      setRfInstance: (inst: ReactFlowInstance) => {
+        const [set] = a
+        set({ rfInstance: inst })
+      },
 
       setWorkflowName: (name: string) => {
         const [set] = a
@@ -54,9 +65,8 @@ export const useFlowStore = create<FlowState>()(
         const newNodes = applyNodeChanges(changes, currentState.nodes) as CustomNode[]
         set({ nodes: newNodes })
 
-        // Only record history on meaningful changes (not mid-drag positions or selections)
         const isSignificant = changes.some(c => {
-          if (c.type === 'remove') return true
+          if (c.type === 'remove')   return true
           if (c.type === 'position') return !(c as NodePositionChange).dragging
           return false
         })
@@ -89,13 +99,8 @@ export const useFlowStore = create<FlowState>()(
       addNode: (type: NodeType, position) => {
         const [set, get] = a
         const currentState = get()
-        const id = `${type}-${Date.now()}`
-        const data: NodeData = {
-          label: NODE_LABELS[type],
-          description: '',
-          status: 'idle',
-          config: {},
-        }
+        const id   = `${type}-${Date.now()}`
+        const data: NodeData = { label: NODE_LABELS[type], description: '', status: 'idle', config: {} }
         const newNode: CustomNode = { id, type, position, data }
         const newNodes = [...currentState.nodes, newNode]
         set({ nodes: newNodes })
@@ -107,7 +112,11 @@ export const useFlowStore = create<FlowState>()(
         const currentState = get()
         const newNodes = currentState.nodes.filter(n => n.id !== id)
         const newEdges = currentState.edges.filter(e => e.source !== id && e.target !== id)
-        set({ nodes: newNodes, edges: newEdges, selectedNodeId: currentState.selectedNodeId === id ? null : currentState.selectedNodeId })
+        set({
+          nodes: newNodes,
+          edges: newEdges,
+          selectedNodeId: currentState.selectedNodeId === id ? null : currentState.selectedNodeId,
+        })
         currentState.addToHistory({ nodes: newNodes, edges: newEdges })
       },
 
@@ -133,12 +142,13 @@ export const useFlowStore = create<FlowState>()(
         set({ nodes: initialNodes, edges: initialEdges, selectedNodeId: null })
       },
 
-      autoLayout: () => {
+      autoLayout: (direction?: LayoutDirection) => {
         const [set, get] = a
         const currentState = get()
-        const newNodes = computeAutoLayout(currentState.nodes, currentState.edges)
+        const newNodes = computeAutoLayout(currentState.nodes, currentState.edges, direction ?? 'LR')
         set({ nodes: newNodes })
         currentState.addToHistory({ nodes: newNodes, edges: currentState.edges })
+        setTimeout(() => currentState.rfInstance?.fitView({ padding: 0.15, duration: 400 }), 50)
       },
 
       exportWorkflow: () => {
@@ -159,9 +169,10 @@ export const useFlowStore = create<FlowState>()(
       name: 'flow-storage-v2',
       partialize: (state) => ({
         workflowName: state.workflowName,
-        nodes: state.nodes,
-        edges: state.edges,
-        templates: state.templates,
+        nodes:        state.nodes,
+        edges:        state.edges,
+        templates:    state.templates,
+        versions:     state.versions,
       }),
     },
   ),

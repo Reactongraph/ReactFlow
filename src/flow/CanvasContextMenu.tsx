@@ -10,7 +10,7 @@ interface ContextMenuProps {
   y: number
   onAddNode: (type: NodeType) => void
   onPaste: () => void
-  onAutoLayout: () => void
+  onAutoLayout: (direction?: 'LR' | 'TB') => void
   onFitView: () => void
   onClose: () => void
 }

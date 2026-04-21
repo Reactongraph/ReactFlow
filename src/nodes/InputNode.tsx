@@ -9,7 +9,10 @@ const InputNode: React.FC<NodeProps<NodeData>> = (props) => (
     {...props}
     config={{
       headerColor: 'from-blue-500 to-blue-600',
-      icon: <ArrowDownToLine size={14} />,
+      icon:        <ArrowDownToLine size={14} />,
+      detail:      props.data.config?.dataType
+        ? `Type: ${props.data.config.dataType.toUpperCase()}`
+        : 'Trigger / data source',
       hasSource: true,
     }}
   />

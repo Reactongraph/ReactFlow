@@ -1,27 +1,38 @@
 import dagre from 'dagre'
-import { CustomNode, Edge } from '../types'
+import { CustomNode, Edge, LayoutDirection } from '../types'
 
-export const autoLayout = (nodes: CustomNode[], edges: Edge[]): CustomNode[] => {
-  const dagreGraph = new dagre.graphlib.Graph()
-  dagreGraph.setDefaultEdgeLabel(() => ({}))
+const NODE_WIDTH  = 200
+const NODE_HEIGHT = 80
 
-  nodes.forEach(node => {
-    dagreGraph.setNode(node.id, { width: 150, height: 50 })
+export const autoLayout = (
+  nodes: CustomNode[],
+  edges: Edge[],
+  direction: LayoutDirection = 'LR',
+): CustomNode[] => {
+  if (nodes.length === 0) return nodes
+
+  const graph = new dagre.graphlib.Graph()
+  graph.setDefaultEdgeLabel(() => ({}))
+  graph.setGraph({
+    rankdir: direction,
+    ranksep: direction === 'TB' || direction === 'BT' ? 80  : 120,
+    nodesep: direction === 'TB' || direction === 'BT' ? 60  : 50,
+    marginx:  20,
+    marginy:  20,
   })
 
-  edges.forEach(edge => {
-    dagreGraph.setEdge(edge.source, edge.target)
-  })
+  nodes.forEach(node => graph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT }))
+  edges.forEach(edge => graph.setEdge(edge.source, edge.target))
 
-  dagre.layout(dagreGraph)
+  dagre.layout(graph)
 
   return nodes.map(node => {
-    const nodeWithPosition = dagreGraph.node(node.id)
+    const { x, y, width, height } = graph.node(node.id)
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - nodeWithPosition.width / 2,
-        y: nodeWithPosition.y - nodeWithPosition.height / 2,
+        x: x - width  / 2,
+        y: y - height / 2,
       },
     }
   })

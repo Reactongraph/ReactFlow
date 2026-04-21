@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
 import { useFlowStore } from '../store'
 
-export const useKeyboardShortcuts = () => {
+export const useKeyboardShortcuts = (onOpenCommandPalette: () => void) => {
   const {
     undo, redo,
     copyNodes, pasteNodes, duplicateNode,
     deleteNode, selectedNodeId,
     validateWorkflow, autoLayout,
+    execution, startExecution, pauseExecution, resumeExecution, stopExecution, stepExecution,
   } = useFlowStore()
 
   useEffect(() => {
@@ -19,6 +20,10 @@ export const useKeyboardShortcuts = () => {
 
       if (ctrl) {
         switch (e.key.toLowerCase()) {
+          case 'k':
+            e.preventDefault()
+            onOpenCommandPalette()
+            break
           case 'z':
             e.preventDefault()
             e.shiftKey ? redo() : undo()
@@ -41,13 +46,30 @@ export const useKeyboardShortcuts = () => {
             break
           case 'l':
             e.preventDefault()
-            autoLayout()
+            autoLayout('LR')
             break
         }
         return
       }
 
       switch (e.key) {
+        case 'F5':
+          e.preventDefault()
+          if (execution.status === 'paused') resumeExecution()
+          else if (execution.status === 'idle' || execution.status === 'completed' || execution.status === 'failed') startExecution()
+          break
+        case 'F6':
+          e.preventDefault()
+          pauseExecution()
+          break
+        case 'F8':
+          e.preventDefault()
+          stopExecution()
+          break
+        case 'F10':
+          e.preventDefault()
+          stepExecution()
+          break
         case 'Delete':
         case 'Backspace':
           if (selectedNodeId) {
@@ -67,5 +89,9 @@ export const useKeyboardShortcuts = () => {
 
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [undo, redo, copyNodes, pasteNodes, duplicateNode, deleteNode, selectedNodeId, validateWorkflow, autoLayout])
+  }, [
+    undo, redo, copyNodes, pasteNodes, duplicateNode, deleteNode, selectedNodeId,
+    validateWorkflow, autoLayout, onOpenCommandPalette,
+    execution.status, startExecution, pauseExecution, resumeExecution, stopExecution, stepExecution,
+  ])
 }

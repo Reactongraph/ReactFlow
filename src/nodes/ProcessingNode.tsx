@@ -9,7 +9,10 @@ const ProcessingNode: React.FC<NodeProps<NodeData>> = (props) => (
     {...props}
     config={{
       headerColor: 'from-violet-500 to-violet-600',
-      icon: <Cpu size={14} />,
+      icon:        <Cpu size={14} />,
+      detail:      props.data.config?.processingType
+        ? `Mode: ${props.data.config.processingType}`
+        : 'Custom script processing',
       hasTarget: true,
       hasSource: true,
     }}

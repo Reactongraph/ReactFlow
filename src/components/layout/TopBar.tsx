@@ -2,126 +2,301 @@ import React, { useRef, useState } from 'react'
 import {
   Workflow, Undo2, Redo2, LayoutGrid, CheckCircle2,
   Download, Upload, RotateCcw, ChevronDown,
+  Play, Pause, Square, SkipForward, History, Save,
+  AlignStartVertical, AlignStartHorizontal,
+  Command,
 } from 'lucide-react'
 import { useFlowStore } from '../../store'
 import { Button } from '../ui/Button'
 import { Tooltip } from '../ui/Tooltip'
 import ConfirmDialog from '../ui/ConfirmDialog'
+import VersionHistoryPanel from '../panels/VersionHistoryPanel'
 
-const TopBar: React.FC = () => {
+interface TopBarProps {
+  onOpenCommandPalette: () => void
+}
+
+const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
   const {
     workflowName, setWorkflowName,
     undo, redo, history,
     autoLayout, validateWorkflow,
     exportWorkflow, importWorkflow,
     resetFlow, nodes, edges,
+    execution,
+    startExecution, pauseExecution, resumeExecution, stopExecution, stepExecution,
+    saveVersion,
   } = useFlowStore()
 
-  const [editingName,   setEditingName]   = useState(false)
-  const [nameValue,     setNameValue]     = useState(workflowName)
-  const [confirmReset,  setConfirmReset]  = useState(false)
+  const [editingName,    setEditingName]    = useState(false)
+  const [nameValue,      setNameValue]      = useState(workflowName)
+  const [confirmReset,   setConfirmReset]   = useState(false)
+  const [showVersions,   setShowVersions]   = useState(false)
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false)
   const importRef = useRef<HTMLInputElement>(null)
 
-  const canUndo = history.past.length > 0
-  const canRedo = history.future.length > 0
+  const canUndo  = history.past.length   > 0
+  const canRedo  = history.future.length > 0
+  const isEmpty  = nodes.length === 0 && edges.length === 0
 
-  /* ── Workflow name ─────────────────────────────────────── */
+  const { status } = execution
+  const isRunning  = status === 'running'
+  const isPaused   = status === 'paused'
+  const isActive   = isRunning || isPaused
+
+  /* ── Workflow name ──────────────────────────────────────── */
   const commitName = () => {
     setWorkflowName(nameValue.trim() || 'Untitled Workflow')
     setEditingName(false)
   }
 
-  /* ── Export ────────────────────────────────────────────── */
+  /* ── Export ─────────────────────────────────────────────── */
   const handleExport = () => {
     const json = exportWorkflow()
     const blob = new Blob([json], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
-    const a    = Object.assign(document.createElement('a'), { href: url, download: `${workflowName.replace(/\s+/g, '_')}.json` })
+    const a    = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `${workflowName.replace(/\s+/g, '_')}.json`,
+    })
     a.click()
     URL.revokeObjectURL(url)
   }
 
-  /* ── Import ────────────────────────────────────────────── */
+  /* ── Import ─────────────────────────────────────────────── */
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) => {
+    reader.onload = ev => {
       try { importWorkflow(ev.target?.result as string) }
-      catch { /* invalid JSON — silently ignore */ }
+      catch { /* invalid JSON */ }
     }
     reader.readAsText(file)
     e.target.value = ''
   }
 
-  /* ── Validate ──────────────────────────────────────────── */
-  const handleValidate = () => { validateWorkflow() }
+  /* ── Execution controls ─────────────────────────────────── */
+  const handleRun = () => {
+    if (isPaused) resumeExecution()
+    else startExecution()
+  }
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-1 border-b border-slate-200 bg-white px-3">
-      {/* Logo */}
-      <div className="flex items-center gap-2 pr-3 border-r border-slate-200 mr-1">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-          <Workflow size={15} className="text-white" />
+    <>
+      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-slate-200 bg-white px-3">
+
+        {/* ── Logo ──────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 pr-3 border-r border-slate-200 mr-1">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
+            <Workflow size={15} className="text-white" />
+          </div>
+          <span className="text-sm font-bold text-slate-800 hidden sm:block">FlowBuilder</span>
         </div>
-        <span className="text-sm font-bold text-slate-800 hidden sm:block">FlowBuilder</span>
-      </div>
 
-      {/* Workflow name */}
-      {editingName ? (
-        <input
-          autoFocus
-          value={nameValue}
-          onChange={e => setNameValue(e.target.value)}
-          onBlur={commitName}
-          onKeyDown={e => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false) }}
-          className="h-7 rounded-md border border-indigo-300 bg-white px-2 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-400 w-48"
-        />
-      ) : (
-        <button
-          onClick={() => { setNameValue(workflowName); setEditingName(true) }}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-        >
-          {workflowName}
-          <ChevronDown size={12} className="text-slate-400" />
-        </button>
-      )}
+        {/* ── Workflow name ──────────────────────────────────── */}
+        {editingName ? (
+          <input
+            autoFocus
+            value={nameValue}
+            onChange={e => setNameValue(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={e => {
+              if (e.key === 'Enter')  commitName()
+              if (e.key === 'Escape') setEditingName(false)
+            }}
+            className="h-7 w-48 rounded-md border border-indigo-300 bg-white px-2 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+        ) : (
+          <button
+            onClick={() => { setNameValue(workflowName); setEditingName(true) }}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            {workflowName}
+            <ChevronDown size={12} className="text-slate-400" />
+          </button>
+        )}
 
-      <div className="mx-2 h-5 w-px bg-slate-200" />
+        {/* ── Command palette hint ───────────────────────────── */}
+        <Tooltip content="Command Palette" side="bottom">
+          <button
+            onClick={onOpenCommandPalette}
+            className="ml-1 flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-[11px] text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+          >
+            <Command size={11} />
+            <span className="hidden sm:inline">Ctrl K</span>
+          </button>
+        </Tooltip>
 
-      {/* Undo / Redo */}
-      <Tooltip content="Undo (Ctrl+Z)" side="bottom">
-        <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo}>
-          <Undo2 size={15} />
-        </Button>
-      </Tooltip>
-      <Tooltip content="Redo (Ctrl+Shift+Z)" side="bottom">
-        <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo}>
-          <Redo2 size={15} />
-        </Button>
-      </Tooltip>
+        <div className="mx-2 h-5 w-px bg-slate-200" />
 
-      <div className="mx-2 h-5 w-px bg-slate-200" />
+        {/* ── Undo / Redo ────────────────────────────────────── */}
+        <Tooltip content="Undo (Ctrl+Z)" side="bottom">
+          <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo}>
+            <Undo2 size={15} />
+          </Button>
+        </Tooltip>
+        <Tooltip content="Redo (Ctrl+Y)" side="bottom">
+          <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo}>
+            <Redo2 size={15} />
+          </Button>
+        </Tooltip>
 
-      {/* Auto Layout */}
-      <Tooltip content="Auto Layout" side="bottom">
-        <Button variant="ghost" size="icon" onClick={autoLayout} disabled={nodes.length === 0}>
-          <LayoutGrid size={15} />
-        </Button>
-      </Tooltip>
+        <div className="mx-2 h-5 w-px bg-slate-200" />
 
-      {/* Reset */}
-      <Tooltip content="Reset canvas" side="bottom">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setConfirmReset(true)}
-          disabled={nodes.length === 0 && edges.length === 0}
-        >
-          <RotateCcw size={15} />
-        </Button>
-      </Tooltip>
+        {/* ── Layout picker ─────────────────────────────────── */}
+        <div className="relative">
+          <Tooltip content="Auto Layout" side="bottom">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowLayoutMenu(o => !o)}
+              disabled={nodes.length === 0}
+            >
+              <LayoutGrid size={15} />
+            </Button>
+          </Tooltip>
+          {showLayoutMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowLayoutMenu(false)} />
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-fade-in">
+                {([
+                  { dir: 'LR', label: 'Left → Right', Icon: AlignStartHorizontal },
+                  { dir: 'TB', label: 'Top → Bottom',  Icon: AlignStartVertical },
+                  { dir: 'RL', label: 'Right → Left',  Icon: AlignStartHorizontal },
+                  { dir: 'BT', label: 'Bottom → Top',  Icon: AlignStartVertical },
+                ] as const).map(({ dir, label, Icon }) => (
+                  <button
+                    key={dir}
+                    onClick={() => { autoLayout(dir); setShowLayoutMenu(false) }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Icon size={13} className="text-slate-400" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
+        {/* ── Reset ─────────────────────────────────────────── */}
+        <Tooltip content="Reset canvas" side="bottom">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setConfirmReset(true)}
+            disabled={isEmpty}
+          >
+            <RotateCcw size={15} />
+          </Button>
+        </Tooltip>
+
+        <div className="mx-2 h-5 w-px bg-slate-200" />
+
+        {/* ── Execution controls ─────────────────────────────── */}
+        <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+          {/* Play / Resume */}
+          <Tooltip content={isPaused ? 'Resume (F5)' : 'Run Workflow (F5)'} side="bottom">
+            <button
+              onClick={handleRun}
+              disabled={isRunning || nodes.length === 0}
+              className={[
+                'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                'disabled:opacity-40 disabled:pointer-events-none',
+                !isActive
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+                  : isPaused
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
+                  : 'text-slate-400',
+              ].join(' ')}
+            >
+              <Play size={13} className={!isActive || isPaused ? '' : 'opacity-30'} />
+            </button>
+          </Tooltip>
+
+          {/* Pause */}
+          <Tooltip content="Pause" side="bottom">
+            <button
+              onClick={pauseExecution}
+              disabled={!isRunning}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-amber-600 disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <Pause size={13} />
+            </button>
+          </Tooltip>
+
+          {/* Step */}
+          <Tooltip content="Step Through" side="bottom">
+            <button
+              onClick={stepExecution}
+              disabled={isRunning && !isPaused}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <SkipForward size={13} />
+            </button>
+          </Tooltip>
+
+          {/* Stop */}
+          <Tooltip content="Stop" side="bottom">
+            <button
+              onClick={stopExecution}
+              disabled={!isActive}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <Square size={13} />
+            </button>
+          </Tooltip>
+        </div>
+
+        <div className="flex-1" />
+
+        {/* ── Validate ──────────────────────────────────────── */}
+        <Tooltip content="Validate workflow" side="bottom">
+          <Button variant="outline" size="sm" onClick={() => validateWorkflow()}>
+            <CheckCircle2 size={13} />
+            Validate
+          </Button>
+        </Tooltip>
+
+        <div className="mx-1.5 h-5 w-px bg-slate-200" />
+
+        {/* ── Version history ────────────────────────────────── */}
+        <Tooltip content="Version history" side="bottom">
+          <Button variant="outline" size="sm" onClick={() => setShowVersions(true)}>
+            <History size={13} />
+            History
+          </Button>
+        </Tooltip>
+
+        {/* ── Save version ───────────────────────────────────── */}
+        <Tooltip content="Save current version" side="bottom">
+          <Button variant="outline" size="sm" onClick={() => saveVersion()} disabled={isEmpty}>
+            <Save size={13} />
+          </Button>
+        </Tooltip>
+
+        <div className="mx-1.5 h-5 w-px bg-slate-200" />
+
+        {/* ── Import ────────────────────────────────────────── */}
+        <Tooltip content="Import JSON" side="bottom">
+          <Button variant="outline" size="sm" onClick={() => importRef.current?.click()}>
+            <Upload size={13} />
+            Import
+          </Button>
+        </Tooltip>
+        <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+
+        {/* ── Export ────────────────────────────────────────── */}
+        <Tooltip content="Export JSON" side="bottom">
+          <Button variant="primary" size="sm" onClick={handleExport}>
+            <Download size={13} />
+            Export
+          </Button>
+        </Tooltip>
+      </header>
+
+      {/* ── Dialogs / Panels ──────────────────────────────────── */}
       <ConfirmDialog
         open={confirmReset}
         title="Reset canvas"
@@ -131,35 +306,8 @@ const TopBar: React.FC = () => {
         onCancel={() => setConfirmReset(false)}
       />
 
-      <div className="flex-1" />
-
-      {/* Validate */}
-      <Tooltip content="Validate workflow" side="bottom">
-        <Button variant="outline" size="sm" onClick={handleValidate}>
-          <CheckCircle2 size={13} />
-          Validate
-        </Button>
-      </Tooltip>
-
-      <div className="mx-2 h-5 w-px bg-slate-200" />
-
-      {/* Import */}
-      <Tooltip content="Import JSON" side="bottom">
-        <Button variant="outline" size="sm" onClick={() => importRef.current?.click()}>
-          <Upload size={13} />
-          Import
-        </Button>
-      </Tooltip>
-      <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-
-      {/* Export */}
-      <Tooltip content="Export JSON" side="bottom">
-        <Button variant="primary" size="sm" onClick={handleExport}>
-          <Download size={13} />
-          Export
-        </Button>
-      </Tooltip>
-    </header>
+      {showVersions && <VersionHistoryPanel onClose={() => setShowVersions(false)} />}
+    </>
   )
 }
 

@@ -3,7 +3,6 @@ import { NodeProps } from 'reactflow'
 import { Sparkles } from 'lucide-react'
 import BaseNode from './BaseNode'
 import { NodeData } from '../types'
-import { Badge } from '../components/ui/Badge'
 
 const AiNode: React.FC<NodeProps<NodeData>> = (props) => {
   const model = props.data.config?.model
@@ -13,12 +12,15 @@ const AiNode: React.FC<NodeProps<NodeData>> = (props) => {
       {...props}
       config={{
         headerColor: 'from-purple-600 to-purple-700',
-        icon: <Sparkles size={14} />,
+        icon:        <Sparkles size={14} />,
+        badge: model ? (
+          <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">
+            {model}
+          </span>
+        ) : undefined,
+        detail: model ? undefined : 'LLM · ML Inference',
         hasTarget: true,
         hasSource: true,
-        children: model ? (
-          <Badge color="bg-purple-50 text-purple-700">{model}</Badge>
-        ) : undefined,
       }}
     />
   )

@@ -1,4 +1,4 @@
-import { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow'
+import { Node, Edge, NodeChange, EdgeChange, Connection, ReactFlowInstance } from 'reactflow'
 
 export type { Edge } from 'reactflow'
 
@@ -12,6 +12,16 @@ export type NodeType =
   | 'ai'
 
 export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'warning'
+
+export type ExecutionStatus =
+  | 'idle'
+  | 'running'
+  | 'paused'
+  | 'stopped'
+  | 'completed'
+  | 'failed'
+
+export type LayoutDirection = 'TB' | 'LR' | 'BT' | 'RL'
 
 export interface NodeConfig {
   // Input
@@ -56,11 +66,68 @@ export interface CustomNode extends Node {
   data: NodeData
 }
 
+// ── Execution ──────────────────────────────────────────────────
+
+export type ExecutionLogType = 'info' | 'success' | 'error' | 'warning'
+
+export interface ExecutionLogEntry {
+  id: string
+  timestamp: number
+  nodeId: string
+  nodeLabel: string
+  type: ExecutionLogType
+  message: string
+  data?: unknown
+  duration?: number
+}
+
+export interface NodeExecutionResult {
+  nodeId: string
+  status: 'success' | 'error' | 'skipped'
+  input?: unknown
+  output?: unknown
+  error?: string
+  duration: number
+  startedAt: number
+}
+
+export interface ExecutionState {
+  status: ExecutionStatus
+  currentNodeId: string | null
+  completedNodes: Set<string>
+  failedNodes: Set<string>
+  logs: ExecutionLogEntry[]
+  results: Record<string, NodeExecutionResult>
+  startedAt: number | null
+  completedAt: number | null
+  activeEdges: Set<string>
+  breakpoints: Set<string>
+  isStepMode: boolean
+}
+
+// ── Versions ───────────────────────────────────────────────────
+
+export interface WorkflowVersion {
+  id: string
+  name: string
+  description?: string
+  createdAt: number
+  nodes: CustomNode[]
+  edges: Edge[]
+  workflowName: string
+}
+
+// ── Flow state ─────────────────────────────────────────────────
+
 export interface FlowState {
   workflowName: string
   nodes: CustomNode[]
   edges: Edge[]
   selectedNodeId: string | null
+
+  // ReactFlow instance (for fitView / project)
+  rfInstance: ReactFlowInstance | null
+  setRfInstance: (inst: ReactFlowInstance) => void
 
   // Workflow name
   setWorkflowName: (name: string) => void
@@ -97,9 +164,25 @@ export interface FlowState {
   validateWorkflow: () => ValidationError[]
 
   // Layout / IO
-  autoLayout: () => void
+  autoLayout: (direction?: LayoutDirection) => void
   exportWorkflow: () => string
   importWorkflow: (json: string) => void
+
+  // Execution
+  execution: ExecutionState
+  startExecution: () => Promise<void>
+  pauseExecution: () => void
+  resumeExecution: () => void
+  stopExecution: () => void
+  stepExecution: () => void
+  toggleBreakpoint: (nodeId: string) => void
+  clearExecutionLogs: () => void
+
+  // Versions
+  versions: WorkflowVersion[]
+  saveVersion: (name?: string) => void
+  restoreVersion: (id: string) => void
+  deleteVersion: (id: string) => void
 }
 
 export interface HistoryState {

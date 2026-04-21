@@ -5,6 +5,7 @@ import BaseNode from './BaseNode'
 import { NodeData } from '../types'
 
 const DecisionNode: React.FC<NodeProps<NodeData>> = (props) => {
+  const condition  = props.data.config?.condition
   const trueLabel  = props.data.config?.trueLabel  ?? 'Yes'
   const falseLabel = props.data.config?.falseLabel ?? 'No'
 
@@ -13,17 +14,19 @@ const DecisionNode: React.FC<NodeProps<NodeData>> = (props) => {
       {...props}
       config={{
         headerColor: 'from-pink-500 to-pink-600',
-        icon: <GitFork size={14} />,
-        hasTarget: true,
-        extraSources: [
-          { id: 'yes', style: { top: '35%' }, label: trueLabel },
-          { id: 'no',  style: { top: '65%' }, label: falseLabel },
-        ],
-        children: props.data.config?.condition ? (
-          <code className="text-[10px] bg-slate-50 px-1.5 py-0.5 rounded text-slate-500 block truncate">
-            {props.data.config.condition}
+        icon:        <GitFork size={14} />,
+        badge: condition ? (
+          <code className="block w-full truncate rounded bg-slate-50 px-2 py-1 text-[10px] font-mono text-slate-600">
+            {condition}
           </code>
         ) : undefined,
+        detail: condition ? undefined : 'No condition set',
+        hasTarget: true,
+        // Two named source handles: Yes (top) / No (bottom)
+        extraSources: [
+          { id: 'yes', topPct: 35, label: trueLabel  },
+          { id: 'no',  topPct: 65, label: falseLabel },
+        ],
       }}
     />
   )
