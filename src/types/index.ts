@@ -2,20 +2,70 @@ import { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow'
 
 export type { Edge } from 'reactflow'
 
-export type NodeType = 'input' | 'processing' | 'output'
+export type NodeType =
+  | 'input'
+  | 'output'
+  | 'processing'
+  | 'api'
+  | 'transform'
+  | 'decision'
+  | 'ai'
+
+export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'warning'
+
+export interface NodeConfig {
+  // Input
+  dataType?: 'json' | 'csv' | 'text' | 'number' | 'boolean'
+  sampleData?: string
+  // API
+  url?: string
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+  headers?: string
+  body?: string
+  timeout?: number
+  // Transform
+  transformType?: 'map' | 'filter' | 'reduce' | 'aggregate' | 'custom'
+  transformCode?: string
+  // Decision
+  condition?: string
+  trueLabel?: string
+  falseLabel?: string
+  // AI
+  model?: 'gpt-4' | 'gpt-3.5-turbo' | 'claude-3-opus' | 'claude-3-sonnet' | 'custom'
+  prompt?: string
+  maxTokens?: number
+  temperature?: number
+  // Output
+  format?: 'json' | 'csv' | 'html' | 'text'
+  destination?: string
+  // Processing
+  processingType?: 'aggregate' | 'validate' | 'enrich' | 'normalize'
+  script?: string
+}
+
+export interface NodeData {
+  label: string
+  description?: string
+  status?: NodeStatus
+  config?: NodeConfig
+  properties?: Record<string, unknown>
+}
 
 export interface CustomNode extends Node {
   type: NodeType
-  data: {
-    label: string
-    properties?: Record<string, unknown>
-  }
+  data: NodeData
 }
 
 export interface FlowState {
+  workflowName: string
   nodes: CustomNode[]
   edges: Edge[]
   selectedNodeId: string | null
+
+  // Workflow name
+  setWorkflowName: (name: string) => void
+
+  // Core flow
   onNodesChange: (changes: NodeChange[]) => void
   onEdgesChange: (changes: EdgeChange[]) => void
   onConnect: (connection: Connection) => void
@@ -24,23 +74,32 @@ export interface FlowState {
   updateNode: (id: string, updates: Partial<CustomNode>) => void
   setSelectedNode: (id: string | null) => void
   resetFlow: () => void
-  // New additions
+
+  // History
   history: HistoryState
-  clipboard: ClipboardState
-  templates: Record<string, CustomNode>
-  validation: ValidationState
   undo: () => void
   redo: () => void
+  addToHistory: (snapshot: FlowSnapshot) => void
+
+  // Clipboard
+  clipboard: ClipboardState
   copyNodes: () => void
   pasteNodes: (position?: { x: number; y: number }) => void
   duplicateNode: () => void
+
+  // Templates
+  templates: Record<string, CustomNode>
   saveTemplate: (node: CustomNode) => void
   createFromTemplate: (templateId: string, position: { x: number; y: number }) => void
+
+  // Validation
+  validation: ValidationState
+  validateWorkflow: () => ValidationError[]
+
+  // Layout / IO
   autoLayout: () => void
   exportWorkflow: () => string
   importWorkflow: (json: string) => void
-  validateWorkflow: () => ValidationError[]
-  addToHistory: (snapshot: FlowSnapshot) => void
 }
 
 export interface HistoryState {
@@ -58,10 +117,6 @@ export interface ClipboardState {
   edges: Edge[]
 }
 
-export interface TemplateState {
-  templates: Record<string, CustomNode>
-}
-
 export interface ValidationState {
   errors: ValidationError[]
 }
@@ -72,4 +127,16 @@ export interface ValidationError {
   message: string
   nodeId?: string
   edgeId?: string
+}
+
+export interface NodeCategoryDef {
+  category: string
+  nodes: NodeDef[]
+}
+
+export interface NodeDef {
+  type: NodeType
+  label: string
+  description: string
+  color: string
 }

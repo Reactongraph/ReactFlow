@@ -2,41 +2,70 @@ import { useEffect } from 'react'
 import { useFlowStore } from '../store'
 
 export const useKeyboardShortcuts = () => {
-  const { undo, redo, copyNodes, pasteNodes, duplicateNode, deleteNode, selectedNodeId } = useFlowStore()
+  const {
+    undo, redo,
+    copyNodes, pasteNodes, duplicateNode,
+    deleteNode, selectedNodeId,
+    validateWorkflow, autoLayout,
+  } = useFlowStore()
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey) {
-        switch (event.key) {
+    const handler = (e: KeyboardEvent) => {
+      // Don't intercept when user is typing in a form field
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      const ctrl = e.ctrlKey || e.metaKey
+
+      if (ctrl) {
+        switch (e.key.toLowerCase()) {
           case 'z':
-            if (event.shiftKey) {
-              event.preventDefault()
-              redo()
-            } else {
-              event.preventDefault()
-              undo()
-            }
+            e.preventDefault()
+            e.shiftKey ? redo() : undo()
+            break
+          case 'y':
+            e.preventDefault()
+            redo()
             break
           case 'c':
-            event.preventDefault()
+            e.preventDefault()
             copyNodes()
             break
           case 'v':
-            event.preventDefault()
+            e.preventDefault()
             pasteNodes()
             break
           case 'd':
-            event.preventDefault()
+            e.preventDefault()
             duplicateNode()
             break
+          case 'l':
+            e.preventDefault()
+            autoLayout()
+            break
         }
-      } else if (event.key === 'Delete' && selectedNodeId) {
-        event.preventDefault()
-        deleteNode(selectedNodeId)
+        return
+      }
+
+      switch (e.key) {
+        case 'Delete':
+        case 'Backspace':
+          if (selectedNodeId) {
+            e.preventDefault()
+            deleteNode(selectedNodeId)
+          }
+          break
+        case 'Escape':
+          useFlowStore.getState().setSelectedNode(null)
+          break
+        case 'Enter':
+          e.preventDefault()
+          validateWorkflow()
+          break
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, copyNodes, pasteNodes, duplicateNode, deleteNode, selectedNodeId])
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [undo, redo, copyNodes, pasteNodes, duplicateNode, deleteNode, selectedNodeId, validateWorkflow, autoLayout])
 }
