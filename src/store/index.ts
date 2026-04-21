@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { CustomNode, FlowState, NodeType } from '../types'
 import { addEdge, Connection, Edge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow'
+import { autoLayout as computeAutoLayout } from '../utils/layout'
 import { createHistorySlice } from './slices/history'
 import { createClipboardSlice } from './slices/clipboard'
 import { createTemplateSlice } from './slices/templates'
@@ -24,32 +25,53 @@ export const useFlowStore = create<FlowState>()(
       onNodesChange: (changes: NodeChange[]) => {
         const [set, get] = a
         const currentState = get()
-        const newNodes = applyNodeChanges(changes, currentState.nodes)
-        set((state) => ({
+        const newNodes = applyNodeChanges(changes, currentState.nodes) as CustomNode[]
+        set({
           nodes: newNodes,
-        }))
-        // Add to history
-        currentState.addToHistory({ nodes: currentState.nodes, edges: currentState.edges })
+        })
+        currentState.addToHistory({ nodes: newNodes, edges: currentState.edges })
       },
 
       onEdgesChange: (changes: EdgeChange[]) => {
         const [set, get] = a
         const currentState = get()
-        const newEdges = applyEdgeChanges(changes, currentState.edges)
-        set((state) => ({
+        const newEdges = applyEdgeChanges(changes, currentState.edges) as Edge[]
+        set({
           edges: newEdges,
-        }))
-        currentState.addToHistory({ nodes: currentState.nodes, edges: currentState.edges })
+        })
+        currentState.addToHistory({ nodes: currentState.nodes, edges: newEdges })
+      },
+
+      autoLayout: () => {
+        const [set, get] = a
+        const currentState = get()
+        const newNodes = computeAutoLayout(currentState.nodes, currentState.edges)
+        set({ nodes: newNodes })
+        currentState.addToHistory({ nodes: newNodes, edges: currentState.edges })
+      },
+
+      exportWorkflow: () => {
+        const [, get] = a
+        const { nodes, edges } = get()
+        return JSON.stringify({ nodes, edges })
+      },
+
+      importWorkflow: (json: string) => {
+        const [set, get] = a
+        const currentState = get()
+        const { nodes, edges } = JSON.parse(json) as { nodes: CustomNode[]; edges: Edge[] }
+        set({ nodes, edges })
+        currentState.addToHistory({ nodes, edges })
       },
 
       onConnect: (connection: Connection) => {
         const [set, get] = a
         const currentState = get()
         const newEdges = addEdge(connection, currentState.edges)
-        set((state) => ({
+        set({
           edges: newEdges,
-        }))
-        currentState.addToHistory({ nodes: currentState.nodes, edges: currentState.edges })
+        })
+        currentState.addToHistory({ nodes: currentState.nodes, edges: newEdges })
       },
 
       addNode: (type: NodeType, position) => {
@@ -65,34 +87,38 @@ export const useFlowStore = create<FlowState>()(
             properties: {},
           },
         }
-        set((state) => ({
-          nodes: [...state.nodes, newNode],
-        }))
-        currentState.addToHistory({ nodes: currentState.nodes, edges: currentState.edges })
+        const newNodes = [...currentState.nodes, newNode]
+        set({
+          nodes: newNodes,
+        })
+        currentState.addToHistory({ nodes: newNodes, edges: currentState.edges })
       },
 
       deleteNode: (id: string) => {
         const [set, get] = a
         const currentState = get()
-        set((state) => ({
-          nodes: state.nodes.filter((node) => node.id !== id),
-          edges: state.edges.filter(
-            (edge) => edge.source !== id && edge.target !== id
-          ),
-          selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
-        }))
-        currentState.addToHistory({ nodes: currentState.nodes, edges: currentState.edges })
+        const newNodes = currentState.nodes.filter((node) => node.id !== id)
+        const newEdges = currentState.edges.filter(
+          (edge) => edge.source !== id && edge.target !== id
+        )
+        set({
+          nodes: newNodes,
+          edges: newEdges,
+          selectedNodeId: currentState.selectedNodeId === id ? null : currentState.selectedNodeId,
+        })
+        currentState.addToHistory({ nodes: newNodes, edges: newEdges })
       },
 
       updateNode: (id: string, updates: Partial<CustomNode>) => {
         const [set, get] = a
         const currentState = get()
-        set((state) => ({
-          nodes: state.nodes.map((node) =>
-            node.id === id ? { ...node, ...updates } : node
-          ),
-        }))
-        currentState.addToHistory({ nodes: currentState.nodes, edges: currentState.edges })
+        const newNodes = currentState.nodes.map((node) =>
+          node.id === id ? { ...node, ...updates } : node
+        )
+        set({
+          nodes: newNodes,
+        })
+        currentState.addToHistory({ nodes: newNodes, edges: currentState.edges })
       },
 
       setSelectedNode: (id: string | null) => {

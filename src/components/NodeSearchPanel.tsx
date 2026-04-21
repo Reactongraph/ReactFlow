@@ -9,14 +9,14 @@ const nodeTypes: { type: NodeType; label: string; color: string }[] = [
 ]
 
 const NodeSearchPanel: React.FC = () => {
-  const { addNode, templates, createFromTemplate } = useFlowStore()
+  const { templates } = useFlowStore()
   const [search, setSearch] = useState('')
 
   const filteredTypes = nodeTypes.filter(type =>
     type.label.toLowerCase().includes(search.toLowerCase())
   )
 
-  const filteredTemplates = Object.entries(templates).filter(([id, template]) =>
+  const filteredTemplates = Object.entries(templates).filter(([, template]) =>
     template.data.label.toLowerCase().includes(search.toLowerCase())
   )
 

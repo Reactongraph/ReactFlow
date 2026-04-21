@@ -28,7 +28,7 @@ const FlowCanvas: React.FC = () => {
     createFromTemplate,
   } = useFlowStore()
 
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node.id)
   }, [setSelectedNode])
 

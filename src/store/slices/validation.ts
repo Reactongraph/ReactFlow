@@ -38,7 +38,7 @@ export const createValidationSlice: StateCreator<FlowState, [], [], Pick<FlowSta
       }
     })
 
-    set((state) => ({
+    set(() => ({
       validation: {
         errors,
       },

@@ -1,5 +1,7 @@
 import { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow'
 
+export type { Edge } from 'reactflow'
+
 export type NodeType = 'input' | 'processing' | 'output'
 
 export interface CustomNode extends Node {
@@ -25,7 +27,7 @@ export interface FlowState {
   // New additions
   history: HistoryState
   clipboard: ClipboardState
-  templates: TemplateState
+  templates: Record<string, CustomNode>
   validation: ValidationState
   undo: () => void
   redo: () => void
@@ -38,6 +40,7 @@ export interface FlowState {
   exportWorkflow: () => string
   importWorkflow: (json: string) => void
   validateWorkflow: () => ValidationError[]
+  addToHistory: (snapshot: FlowSnapshot) => void
 }
 
 export interface HistoryState {

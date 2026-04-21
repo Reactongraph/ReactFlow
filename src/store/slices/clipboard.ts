@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand'
-import { FlowState, CustomNode } from '../../types'
+import { FlowState } from '../../types'
 
 export const createClipboardSlice: StateCreator<FlowState, [], [], Pick<FlowState, 'clipboard' | 'copyNodes' | 'pasteNodes' | 'duplicateNode'>> = (set, get) => ({
   clipboard: {
@@ -14,7 +14,7 @@ export const createClipboardSlice: StateCreator<FlowState, [], [], Pick<FlowStat
       selectedNodes.some(node => node.id === edge.source) &&
       selectedNodes.some(node => node.id === edge.target)
     )
-    set((state) => ({
+    set(() => ({
       clipboard: {
         nodes: selectedNodes,
         edges: selectedEdges,

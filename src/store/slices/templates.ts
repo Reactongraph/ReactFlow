@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand'
 import { FlowState, CustomNode } from '../../types'
 
 export const createTemplateSlice: StateCreator<FlowState, [], [], Pick<FlowState, 'templates' | 'saveTemplate' | 'createFromTemplate'>> = (set, get) => ({
-  templates: {},
+  templates: {} as Record<string, CustomNode>,
 
   saveTemplate: (node: CustomNode) => {
     const templateId = `template-${node.type}-${Date.now()}`
@@ -16,7 +16,7 @@ export const createTemplateSlice: StateCreator<FlowState, [], [], Pick<FlowState
 
   createFromTemplate: (templateId: string, position: { x: number; y: number }) => {
     const currentState = get()
-    const template = currentState.templates[templateId]
+    const template = (currentState.templates as Record<string, CustomNode>)[templateId]
     if (!template) return
     const newNode: CustomNode = {
       ...template,
