@@ -4,7 +4,7 @@ import {
   Download, Upload, RotateCcw, ChevronDown,
   Play, Pause, Square, SkipForward, History, Save,
   AlignStartVertical, AlignStartHorizontal,
-  Command,
+  Command, FileText, Loader2,
 } from 'lucide-react'
 import { useFlowStore } from '../../store'
 import { Button } from '../ui/Button'
@@ -26,6 +26,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
     execution,
     startExecution, pauseExecution, resumeExecution, stopExecution, stepExecution,
     saveVersion,
+    rfInstance,
   } = useFlowStore()
 
   const [editingName,    setEditingName]    = useState(false)
@@ -33,6 +34,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
   const [confirmReset,   setConfirmReset]   = useState(false)
   const [showVersions,   setShowVersions]   = useState(false)
   const [showLayoutMenu, setShowLayoutMenu] = useState(false)
+  const [pdfExporting,   setPdfExporting]   = useState(false)
   const importRef = useRef<HTMLInputElement>(null)
 
   const canUndo  = history.past.length   > 0
@@ -61,6 +63,25 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
     })
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  /* ── Export PDF ─────────────────────────────────────────── */
+  const handleExportPdf = async () => {
+    if (pdfExporting) return
+    setPdfExporting(true)
+    try {
+      rfInstance?.fitView({ padding: 0.12, duration: 0 })
+      await new Promise(r => setTimeout(r, 120))
+      // Lazy-load so html2canvas + jsPDF split into a separate chunk
+      const { exportWorkflowAsPdf } = await import('../../utils/exportPdf')
+      await exportWorkflowAsPdf({
+        workflowName,
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+      })
+    } finally {
+      setPdfExporting(false)
+    }
   }
 
   /* ── Import ─────────────────────────────────────────────── */
@@ -287,11 +308,27 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
         </Tooltip>
         <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
 
-        {/* ── Export ────────────────────────────────────────── */}
+        {/* ── Export JSON ───────────────────────────────────── */}
         <Tooltip content="Export JSON" side="bottom">
           <Button variant="primary" size="sm" onClick={handleExport}>
             <Download size={13} />
             Export
+          </Button>
+        </Tooltip>
+
+        {/* ── Export PDF ────────────────────────────────────── */}
+        <Tooltip content="Export as PDF" side="bottom">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            disabled={pdfExporting || nodes.length === 0}
+          >
+            {pdfExporting
+              ? <Loader2 size={13} className="animate-spin" />
+              : <FileText size={13} />
+            }
+            {pdfExporting ? 'Generating…' : 'PDF'}
           </Button>
         </Tooltip>
       </header>
