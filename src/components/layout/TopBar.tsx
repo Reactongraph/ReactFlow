@@ -4,9 +4,10 @@ import {
   Download, Upload, RotateCcw, ChevronDown,
   Play, Pause, Square, SkipForward, History, Save,
   AlignStartVertical, AlignStartHorizontal,
-  Command, FileText, Loader2,
+  Command, FileText, Loader2, LogOut, User,
 } from 'lucide-react'
 import { useFlowStore } from '../../store'
+import { useAuthStore } from '../../store/slices/auth'
 import { Button } from '../ui/Button'
 import { Tooltip } from '../ui/Tooltip'
 import ConfirmDialog from '../ui/ConfirmDialog'
@@ -14,9 +15,10 @@ import VersionHistoryPanel from '../panels/VersionHistoryPanel'
 
 interface TopBarProps {
   onOpenCommandPalette: () => void
+  onShowRunHistory?: () => void
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
+const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory }) => {
   const {
     workflowName, setWorkflowName,
     undo, redo, history,
@@ -29,13 +31,21 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
     rfInstance,
   } = useFlowStore()
 
+  const { user, logout } = useAuthStore()
+
   const [editingName,    setEditingName]    = useState(false)
   const [nameValue,      setNameValue]      = useState(workflowName)
   const [confirmReset,   setConfirmReset]   = useState(false)
   const [showVersions,   setShowVersions]   = useState(false)
   const [showLayoutMenu, setShowLayoutMenu] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [showUserMenu,   setShowUserMenu]   = useState(false)
   const [pdfExporting,   setPdfExporting]   = useState(false)
   const importRef = useRef<HTMLInputElement>(null)
+
+  const userInitials = user?.name
+    ? user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : <User size={13} />
 
   const canUndo  = history.past.length   > 0
   const canRedo  = history.future.length > 0
@@ -284,7 +294,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
 
         {/* ── Version history ────────────────────────────────── */}
         <Tooltip content="Version history" side="bottom">
-          <Button variant="outline" size="sm" onClick={() => setShowVersions(true)}>
+          <Button variant="outline" size="sm" onClick={() => onShowRunHistory ? onShowRunHistory() : setShowVersions(true)}>
             <History size={13} />
             History
           </Button>
@@ -308,29 +318,90 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette }) => {
         </Tooltip>
         <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
 
-        {/* ── Export JSON ───────────────────────────────────── */}
-        <Tooltip content="Export JSON" side="bottom">
-          <Button variant="primary" size="sm" onClick={handleExport}>
+        {/* ── Export dropdown ───────────────────────────────── */}
+        <div className="relative">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowExportMenu(o => !o)}
+          >
             <Download size={13} />
             Export
+            <ChevronDown size={11} className="ml-0.5 opacity-70" />
           </Button>
-        </Tooltip>
+          {showExportMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+              <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-fade-in">
+                <button
+                  onClick={() => { handleExport(); setShowExportMenu(false) }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <Download size={13} className="text-slate-400" />
+                  Export as JSON
+                </button>
+                <button
+                  onClick={() => { handleExportPdf(); setShowExportMenu(false) }}
+                  disabled={pdfExporting || nodes.length === 0}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {pdfExporting
+                    ? <Loader2 size={13} className="animate-spin text-slate-400" />
+                    : <FileText size={13} className="text-slate-400" />
+                  }
+                  {pdfExporting ? 'Generating…' : 'Export as PDF'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
-        {/* ── Export PDF ────────────────────────────────────── */}
-        <Tooltip content="Export as PDF" side="bottom">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPdf}
-            disabled={pdfExporting || nodes.length === 0}
+        <div className="mx-1.5 h-5 w-px bg-slate-200" />
+
+        {/* ── User avatar / profile ─────────────────────────── */}
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(o => !o)}
+            className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-slate-100 transition-colors"
           >
-            {pdfExporting
-              ? <Loader2 size={13} className="animate-spin" />
-              : <FileText size={13} />
-            }
-            {pdfExporting ? 'Generating…' : 'PDF'}
-          </Button>
-        </Tooltip>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-semibold text-white select-none">
+              {userInitials}
+            </div>
+            <div className="hidden sm:block text-left">
+              <div className="text-xs font-medium text-slate-800 leading-tight max-w-[120px] truncate">
+                {user?.name ?? 'User'}
+              </div>
+              <div className="text-[10px] text-slate-400 leading-tight max-w-[120px] truncate">
+                {user?.email ?? ''}
+              </div>
+            </div>
+            <ChevronDown size={11} className="text-slate-400" />
+          </button>
+
+          {showUserMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+              <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-fade-in">
+                <div className="px-3 py-2 border-b border-slate-100">
+                  <div className="text-xs font-semibold text-slate-800 truncate">{user?.name}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{user?.email}</div>
+                  {user?.role && (
+                    <span className="mt-1 inline-block rounded-full bg-indigo-50 px-1.5 py-0.5 text-[9px] font-medium text-indigo-600 uppercase tracking-wide">
+                      {user.role}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => { logout(); setShowUserMenu(false) }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut size={13} />
+                  Sign out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       {/* ── Dialogs / Panels ──────────────────────────────────── */}

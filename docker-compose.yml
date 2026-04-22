@@ -1,0 +1,93 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB:       flowbuilder
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      NODE_ENV:    production
+      PORT:        3001
+      FRONTEND_URL: http://localhost:5173
+
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME:     flowbuilder
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      JWT_SECRET:          change-me-in-production
+      JWT_EXPIRES_IN:      15m
+      JWT_REFRESH_SECRET:  change-refresh-in-production
+      JWT_REFRESH_EXPIRES_IN: 7d
+
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SMTP_HOST:  ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT:  ${SMTP_PORT:-587}
+      SMTP_USER:  ${SMTP_USER:-}
+      SMTP_PASS:  ${SMTP_PASS:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+
+  # ── Frontend (production build) ─────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '5173:80'
+    environment:
+      VITE_API_URL: http://localhost:3001/api/v1
+      VITE_WS_URL:  http://localhost:3001/ws
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:

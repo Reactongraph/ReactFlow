@@ -8,4 +8,18 @@ export default defineConfig({
     port: parseInt(process.env.PORT ?? '4173'),
     allowedHosts: ['*'],
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor':    ['react', 'react-dom'],
+          'flow-vendor':     ['reactflow'],
+          'socket-vendor':   ['socket.io-client'],
+          'axios-vendor':    ['axios'],
+          'zustand-vendor':  ['zustand'],
+        },
+      },
+    },
+  },
 })

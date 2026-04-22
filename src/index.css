@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * React Flow ships default background/border/padding for its built-in
+ * node type classes (.react-flow__node-input, -output, -default, -group).
+ * Our custom cards handle all visual styling, so strip every default here.
+ */
+.react-flow__node-input,
+.react-flow__node-output,
+.react-flow__node-default,
+.react-flow__node-group {
+  background:    transparent !important;
+  border:        none        !important;
+  border-radius: 0           !important;
+  padding:       0           !important;
+  box-shadow:    none        !important;
+  width:         auto        !important;
+}
+
 /* ── React Flow base ──────────────────────────────────────────── */
 .react-flow__edge-path {
   stroke-width: 2;

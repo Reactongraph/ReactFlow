@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import FlowCanvas      from './flow/FlowCanvas'
 import TopBar          from './components/layout/TopBar'
 import StatusBar       from './components/layout/StatusBar'
@@ -7,11 +7,17 @@ import PropertyPanel   from './components/PropertyPanel'
 import ValidationPanel from './components/ValidationPanel'
 import ExecutionPanel  from './components/panels/ExecutionPanel'
 import CommandPalette  from './components/CommandPalette'
+import AuthPage        from './components/auth/AuthPage'
+import RunHistoryPanel from './components/panels/RunHistoryPanel'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useValidation }        from './hooks/useValidation'
+import { useAuthStore }         from './store/slices/auth'
 
 const App: React.FC = () => {
-  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+  const [cmdPaletteOpen,  setCmdPaletteOpen]  = useState(false)
+  const [showRunHistory,  setShowRunHistory]   = useState(false)
+
+  const { isLoggedIn, loadUser } = useAuthStore()
 
   const openPalette  = useCallback(() => setCmdPaletteOpen(true),  [])
   const closePalette = useCallback(() => setCmdPaletteOpen(false), [])
@@ -19,11 +25,22 @@ const App: React.FC = () => {
   useKeyboardShortcuts(openPalette)
   useValidation()
 
+  // Restore session on mount
+  useEffect(() => { loadUser() }, [loadUser])
+
+  // ── Auth gate ─────────────────────────────────────────────────
+  if (!isLoggedIn) {
+    return <AuthPage onSuccess={() => { /* state updates automatically */ }} />
+  }
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-100 font-sans antialiased">
 
       {/* ── Top navigation bar ─────────────────────────────── */}
-      <TopBar onOpenCommandPalette={openPalette} />
+      <TopBar
+        onOpenCommandPalette={openPalette}
+        onShowRunHistory={() => setShowRunHistory(true)}
+      />
 
       {/* ── Main work area ─────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
@@ -51,6 +68,14 @@ const App: React.FC = () => {
 
       {/* ── Command palette overlay ─────────────────────────── */}
       {cmdPaletteOpen && <CommandPalette onClose={closePalette} />}
+
+      {/* ── Run history modal ────────────────────────────────── */}
+      {showRunHistory && (
+        <RunHistoryPanel
+          workflowId="local"
+          onClose={() => setShowRunHistory(false)}
+        />
+      )}
     </div>
   )
 }
