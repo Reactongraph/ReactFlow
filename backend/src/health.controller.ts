@@ -13,7 +13,14 @@ export class HealthController {
   @Public()
   @Get()
   async check() {
-    const dbOk = this.db.isInitialized
+    let dbOk = false
+    try {
+      if (this.db.isInitialized) {
+        await this.db.query('SELECT 1')
+        dbOk = true
+      }
+    } catch { /* db not ready */ }
+
     return {
       status:    dbOk ? 'ok' : 'degraded',
       db:        dbOk ? 'connected' : 'disconnected',

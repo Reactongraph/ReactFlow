@@ -34,13 +34,17 @@ import { HealthController }  from './health.controller'
         const isProd = cfg.get('nodeEnv') === 'production'
         const dbUrl  = cfg.get<string | undefined>('database.url')
         const base = {
-          type:        'postgres' as const,
-          entities:    [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: !isProd,
-          logging:     !isProd,
-          ssl:         isProd ? { rejectUnauthorized: false } : false,
+          type:          'postgres' as const,
+          entities:      [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize:   !isProd,
+          logging:       !isProd,
+          ssl:           isProd ? { rejectUnauthorized: false } : false,
+          // Retry so Railway Postgres service has time to start
+          retryAttempts: 10,
+          retryDelay:    3_000,
+          // Prevent pg from hanging indefinitely on a bad host
+          extra: { connectionTimeoutMillis: 5_000, idleTimeoutMillis: 30_000 },
         }
-        // Use connection URL when available (Railway injects DATABASE_URL)
         if (dbUrl) return { ...base, url: dbUrl } as TypeOrmModuleOptions
         return {
           ...base,
@@ -67,15 +71,28 @@ import { HealthController }  from './health.controller'
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
         const redisUrl = cfg.get<string | undefined>('redis.url')
-        return redisUrl
+        const redisOptions = redisUrl
           ? { url: redisUrl }
           : {
-              redis: {
-                host:     cfg.get('redis.host'),
-                port:     cfg.get<number>('redis.port'),
-                password: cfg.get('redis.password'),
-              },
+              host:     cfg.get<string>('redis.host')     ?? 'localhost',
+              port:     cfg.get<number>('redis.port')     ?? 6379,
+              password: cfg.get<string>('redis.password') ?? undefined,
             }
+        return {
+          // Use a custom ioredis factory so connection errors are logged,
+          // not re-thrown as unhandled exceptions that crash the process.
+          createClient: (_type: string, opts: Record<string, unknown>) => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const IORedis = require('ioredis')
+            const client = redisUrl
+              ? new IORedis(redisUrl, { enableOfflineQueue: true, maxRetriesPerRequest: null })
+              : new IORedis({ ...opts, ...redisOptions, enableOfflineQueue: true, maxRetriesPerRequest: null })
+            client.on('error', (err: Error) =>
+              console.error(`[Redis] ${err.message}`),
+            )
+            return client
+          },
+        }
       },
     }),
 

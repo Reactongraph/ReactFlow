@@ -76,9 +76,13 @@ console.log('Config values:', { port, origin })
     SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig))
   }
 
-  await app.listen(port)
-  console.log(`FlowBuilder API running on http://localhost:${port}/api/v1`)
-  console.log(`Swagger docs: http://localhost:${port}/api/docs`)
+  // Bind to 0.0.0.0 so Railway (and any container runtime) can reach the port
+  await app.listen(port, '0.0.0.0')
+  console.log(`FlowBuilder API running on http://0.0.0.0:${port}/api/v1`)
+  console.log(`Swagger docs: http://0.0.0.0:${port}/api/docs`)
 }
 
-bootstrap()
+bootstrap().catch(err => {
+  console.error('Fatal: failed to start FlowBuilder API', err)
+  process.exit(1)
+})
