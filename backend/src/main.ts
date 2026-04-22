@@ -118,4 +118,10 @@ async function bootstrap() {
   }
 }
 
+// Keep the probe server alive even if an async error escapes the try/catch
+// (e.g. Bull queue validation error during startup)
+process.on('unhandledRejection', (reason) => {
+  console.error('[bootstrap] Unhandled rejection (probe server kept alive):', reason)
+})
+
 bootstrap()

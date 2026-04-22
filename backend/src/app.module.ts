@@ -78,21 +78,26 @@ import { HealthController }  from './health.controller'
               port:     cfg.get<number>('redis.port')     ?? 6379,
               password: cfg.get<string>('redis.password') ?? undefined,
             }
-        return {
-          // Use a custom ioredis factory so connection errors are logged,
-          // not re-thrown as unhandled exceptions that crash the process.
-          createClient: (_type: string, opts: Record<string, unknown>) => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const IORedis = require('ioredis')
-            const client = redisUrl
-              ? new IORedis(redisUrl, { enableOfflineQueue: true, maxRetriesPerRequest: null })
-              : new IORedis({ ...opts, ...redisOptions, enableOfflineQueue: true, maxRetriesPerRequest: null })
-            client.on('error', (err: Error) =>
-              console.error(`[Redis] ${err.message}`),
-            )
-            return client
-          },
+        // Bull validates that every ioredis client it receives has
+        // enableReadyCheck=false AND maxRetriesPerRequest=null, otherwise
+        // it throws MISSING_REDIS_OPTS for the bclient/subscriber connections.
+        // We also attach an error listener so connection errors are logged
+        // instead of becoming unhandled rejections that crash the process.
+        const makeRedisClient = () => {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const IORedis = require('ioredis')
+          const ioOpts = {
+            enableReadyCheck:     false, // required by Bull for bclient/subscriber
+            maxRetriesPerRequest: null,  // required by Bull for bclient/subscriber
+            enableOfflineQueue:   true,
+          }
+          const client = redisUrl
+            ? new IORedis(redisUrl, ioOpts)
+            : new IORedis({ host: redisOptions.host, port: redisOptions.port, password: redisOptions.password, ...ioOpts })
+          client.on('error', (err: Error) => console.error(`[Redis] ${err.message}`))
+          return client
         }
+        return { createClient: () => makeRedisClient() }
       },
     }),
 
