@@ -25,7 +25,11 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    await this.loadAndRegisterAll()
+    try {
+      await this.loadAndRegisterAll()
+    } catch (err) {
+      this.logger.warn(`Could not load schedules on startup (tables may not exist yet): ${(err as Error).message}`)
+    }
   }
 
   onModuleDestroy() {

@@ -36,7 +36,7 @@ import { HealthController }  from './health.controller'
         const base = {
           type:          'postgres' as const,
           entities:      [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize:   !isProd,
+          synchronize:   true,
           logging:       !isProd,
           ssl:           isProd ? { rejectUnauthorized: false } : false,
           // Retry so Railway Postgres service has time to start
