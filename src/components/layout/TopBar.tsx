@@ -5,6 +5,7 @@ import {
   Play, Pause, Square, SkipForward, History, Save,
   AlignStartVertical, AlignStartHorizontal,
   Command, FileText, Loader2, LogOut, User,
+  Key, Activity, Sparkles,
 } from 'lucide-react'
 import { useFlowStore } from '../../store'
 import { useAuthStore } from '../../store/slices/auth'
@@ -12,6 +13,10 @@ import { Button } from '../ui/Button'
 import { Tooltip } from '../ui/Tooltip'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import VersionHistoryPanel from '../panels/VersionHistoryPanel'
+import { CredentialManager } from '../panels/CredentialManager'
+import { MonitoringDashboard } from '../panels/MonitoringDashboard'
+import { AiWorkflowBuilder } from '../panels/AiWorkflowBuilder'
+import type { GeneratedWorkflow } from '../../services/ai-builder.service'
 
 interface TopBarProps {
   onOpenCommandPalette: () => void
@@ -33,14 +38,17 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
 
   const { user, logout } = useAuthStore()
 
-  const [editingName,    setEditingName]    = useState(false)
-  const [nameValue,      setNameValue]      = useState(workflowName)
-  const [confirmReset,   setConfirmReset]   = useState(false)
-  const [showVersions,   setShowVersions]   = useState(false)
-  const [showLayoutMenu, setShowLayoutMenu] = useState(false)
-  const [showExportMenu, setShowExportMenu] = useState(false)
-  const [showUserMenu,   setShowUserMenu]   = useState(false)
-  const [pdfExporting,   setPdfExporting]   = useState(false)
+  const [editingName,       setEditingName]       = useState(false)
+  const [nameValue,         setNameValue]         = useState(workflowName)
+  const [confirmReset,      setConfirmReset]      = useState(false)
+  const [showVersions,      setShowVersions]      = useState(false)
+  const [showLayoutMenu,    setShowLayoutMenu]    = useState(false)
+  const [showExportMenu,    setShowExportMenu]    = useState(false)
+  const [showUserMenu,      setShowUserMenu]      = useState(false)
+  const [pdfExporting,      setPdfExporting]      = useState(false)
+  const [showCredentials,   setShowCredentials]   = useState(false)
+  const [showMonitoring,    setShowMonitoring]    = useState(false)
+  const [showAiBuilder,     setShowAiBuilder]     = useState(false)
   const importRef = useRef<HTMLInputElement>(null)
 
   const userInitials = user?.name
@@ -105,6 +113,26 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
     }
     reader.readAsText(file)
     e.target.value = ''
+  }
+
+  /* ── AI workflow apply ──────────────────────────────────── */
+  const handleApplyAiWorkflow = (wf: GeneratedWorkflow) => {
+    // Map AI nodes into CustomNode shape the store expects
+    const mappedNodes = wf.nodes.map(n => ({
+      id:       n.id,
+      type:     'customNode',
+      position: n.position,
+      data: {
+        label:    n.label,
+        nodeType: n.type,
+        ...n.data,
+        inputs:   [],
+        outputs:  [],
+        status:   'idle' as const,
+      },
+    }))
+    importWorkflow(JSON.stringify({ nodes: mappedNodes, edges: wf.edges, workflowName: wf.name }))
+    setShowAiBuilder(false)
   }
 
   /* ── Execution controls ─────────────────────────────────── */
@@ -309,6 +337,30 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
 
         <div className="mx-1.5 h-5 w-px bg-slate-200" />
 
+        {/* ── AI Builder ────────────────────────────────────── */}
+        <Tooltip content="AI Workflow Builder" side="bottom">
+          <Button variant="outline" size="sm" onClick={() => setShowAiBuilder(true)}>
+            <Sparkles size={13} className="text-indigo-500" />
+            AI Build
+          </Button>
+        </Tooltip>
+
+        {/* ── Credentials ───────────────────────────────────── */}
+        <Tooltip content="Credential Manager" side="bottom">
+          <Button variant="ghost" size="icon" onClick={() => setShowCredentials(true)}>
+            <Key size={15} />
+          </Button>
+        </Tooltip>
+
+        {/* ── Monitoring ────────────────────────────────────── */}
+        <Tooltip content="Monitoring Dashboard" side="bottom">
+          <Button variant="ghost" size="icon" onClick={() => setShowMonitoring(true)}>
+            <Activity size={15} />
+          </Button>
+        </Tooltip>
+
+        <div className="mx-1.5 h-5 w-px bg-slate-200" />
+
         {/* ── Import ────────────────────────────────────────── */}
         <Tooltip content="Import JSON" side="bottom">
           <Button variant="outline" size="sm" onClick={() => importRef.current?.click()}>
@@ -414,7 +466,15 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
         onCancel={() => setConfirmReset(false)}
       />
 
-      {showVersions && <VersionHistoryPanel onClose={() => setShowVersions(false)} />}
+      {showVersions    && <VersionHistoryPanel onClose={() => setShowVersions(false)} />}
+      {showCredentials && <CredentialManager   onClose={() => setShowCredentials(false)} />}
+      {showMonitoring  && <MonitoringDashboard onClose={() => setShowMonitoring(false)} />}
+      {showAiBuilder   && (
+        <AiWorkflowBuilder
+          onClose={() => setShowAiBuilder(false)}
+          onApply={handleApplyAiWorkflow}
+        />
+      )}
     </>
   )
 }

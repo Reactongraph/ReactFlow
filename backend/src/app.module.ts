@@ -15,6 +15,10 @@ import { SchedulerModule }  from './scheduler/scheduler.module'
 import { WebsocketModule }  from './websocket/websocket.module'
 import { StorageModule }    from './storage/storage.module'
 import { MonitoringModule }  from './monitoring/monitoring.module'
+import { WebhooksModule }    from './webhooks/webhooks.module'
+import { CredentialsModule } from './credentials/credentials.module'
+import { AuditModule }       from './audit/audit.module'
+import { AiBuilderModule }   from './ai-builder/ai-builder.module'
 import { HealthController }  from './health.controller'
 
 @Module({
@@ -115,6 +119,10 @@ import { HealthController }  from './health.controller'
     WebsocketModule,
     StorageModule,
     MonitoringModule,
+    WebhooksModule,
+    CredentialsModule,
+    AuditModule,
+    AiBuilderModule,
   ],
 })
 export class AppModule {}
