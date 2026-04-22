@@ -1,31 +1,27 @@
-# ── Stage 1: install all deps + build ────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 WORKDIR /app
 
+# ── 1. Install ALL deps (TypeScript / NestJS CLI needed for build) ──
 COPY package*.json ./
 RUN npm ci --frozen-lockfile
 
+# ── 2. Copy source and compile ──────────────────────────────────────
 COPY . .
 RUN npm run build
 
-# Prune devDependencies in-place so the builder's node_modules
-# already contains only production packages for the next stage.
+# ── 3. Drop devDependencies from node_modules ───────────────────────
 RUN npm prune --production
 
-# ── Stage 2: production runtime ───────────────────────────────────
-FROM node:20-alpine AS runner
-WORKDIR /app
+# ── 4. Sanity-check: fail the BUILD (not the container) if a key dep
+#       is missing so the error shows in Railway build logs, not runtime.
+RUN node -e "require('@nestjs/core'); require('@nestjs/common'); require('typeorm')" \
+    && echo "✓ production node_modules verified"
 
-ENV NODE_ENV=production
-
-# Copy pre-pruned node_modules from builder — no second npm install needed.
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist         ./dist
-
-# Writable dirs for logs / uploads
+# ── 5. Runtime setup ────────────────────────────────────────────────
 RUN mkdir -p uploads logs
 
+ENV NODE_ENV=production
+EXPOSE 3001
 USER node
 
-EXPOSE 3001
 CMD ["node", "dist/main"]
