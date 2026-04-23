@@ -10,10 +10,12 @@ import { WorkflowsService } from '../workflows/workflows.service'
 export const EXECUTION_QUEUE = 'workflow-execution'
 
 export interface TriggerRunOptions {
-  workflowId:  string
-  userId:      string
-  triggerType: TriggerType
-  triggerData?: Record<string, unknown>
+  workflowId:       string
+  userId:           string
+  triggerType:      TriggerType
+  triggerData?:     Record<string, unknown>
+  /** Skip ownership check — only set from trusted internal callers (scheduler, webhook trigger) */
+  bypassOwnership?: boolean
 }
 
 @Injectable()
@@ -31,8 +33,10 @@ export class ExecutionService {
   // ── Trigger ───────────────────────────────────────────────────
 
   async triggerRun(opts: TriggerRunOptions): Promise<WorkflowRun> {
-    // Verify workflow exists and user owns it
-    const wf = await this.workflowsService.findOne(opts.workflowId, opts.userId)
+    // Verify workflow exists — bypass ownership check for internal callers
+    const wf = opts.bypassOwnership
+      ? await this.workflowsService.findOneInternal(opts.workflowId)
+      : await this.workflowsService.findOne(opts.workflowId, opts.userId)
 
     // Create a pending run record
     const run = await this.runRepo.save(this.runRepo.create({

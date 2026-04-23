@@ -72,7 +72,6 @@ const App: React.FC = () => {
       {/* ── Run history modal ────────────────────────────────── */}
       {showRunHistory && (
         <RunHistoryPanel
-          workflowId="local"
           onClose={() => setShowRunHistory(false)}
         />
       )}

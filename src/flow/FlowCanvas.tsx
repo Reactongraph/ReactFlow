@@ -12,11 +12,40 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useFlowStore } from '../store'
-import { nodeTypes } from '../nodes'
+import { nodeTypes, getNode } from '../nodes'
 import { NodeType } from '../types'
 import CanvasContextMenu from './CanvasContextMenu'
 
 const proOptions = { hideAttribution: true }
+
+// ── Tailwind color → hex lookup (covers every color used in node definitions) ──
+const TW: Record<string, Record<string, string>> = {
+  blue:    { '500': '#3b82f6', '600': '#2563eb', '700': '#1d4ed8', '800': '#1e40af' },
+  indigo:  { '500': '#6366f1', '600': '#4f46e5', '700': '#4338ca' },
+  violet:  { '500': '#8b5cf6', '600': '#7c3aed', '700': '#6d28d9' },
+  purple:  { '500': '#a855f7', '600': '#9333ea', '700': '#7e22ce' },
+  fuchsia: { '500': '#d946ef', '600': '#c026d3' },
+  pink:    { '400': '#f472b6', '500': '#ec4899', '600': '#db2777' },
+  rose:    { '500': '#f43f5e', '600': '#e11d48' },
+  red:     { '500': '#ef4444', '600': '#dc2626', '700': '#b91c1c' },
+  orange:  { '500': '#f97316', '600': '#ea580c' },
+  amber:   { '500': '#f59e0b', '600': '#d97706' },
+  yellow:  { '500': '#eab308', '600': '#ca8a04' },
+  lime:    { '500': '#84cc16', '600': '#65a30d' },
+  green:   { '500': '#22c55e', '600': '#16a34a', '700': '#15803d', '800': '#166534' },
+  emerald: { '500': '#10b981', '600': '#059669' },
+  teal:    { '500': '#14b8a6', '600': '#0d9488' },
+  cyan:    { '500': '#06b6d4', '600': '#0891b2' },
+  sky:     { '500': '#0ea5e9', '600': '#0284c7' },
+  slate:   { '400': '#94a3b8', '500': '#64748b', '600': '#475569' },
+}
+
+function gradientToHex(color: string): string {
+  // color is like 'from-blue-500 to-blue-600' — extract the from- value
+  const m = color.match(/from-(\w+)-(\d+)/)
+  if (m) return TW[m[1]]?.[m[2]] ?? '#94a3b8'
+  return '#94a3b8'
+}
 
 interface ContextMenuState {
   x: number
@@ -123,11 +152,9 @@ const FlowCanvas: React.FC = () => {
 
   /* ── MiniMap node color ─────────────────────────────────── */
   const nodeColor = useCallback((node: Node) => {
-    const colorMap: Record<string, string> = {
-      input: '#3b82f6', output: '#10b981', processing: '#8b5cf6',
-      api: '#f59e0b', transform: '#06b6d4', decision: '#ec4899', ai: '#7c3aed',
-    }
-    return colorMap[node.type ?? ''] ?? '#94a3b8'
+    const def = getNode(node.type ?? '')
+    if (def?.color) return gradientToHex(def.color)
+    return '#94a3b8'
   }, [])
 
   /* ── Node double-click → toggle breakpoint ─────────────── */

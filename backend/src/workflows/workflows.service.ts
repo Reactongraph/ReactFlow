@@ -65,6 +65,13 @@ export class WorkflowsService {
     return wf
   }
 
+  /** Internal lookup — skips ownership check. Use only from trusted services (scheduler, queue). */
+  async findOneInternal(id: string): Promise<Workflow> {
+    const wf = await this.repo.findOne({ where: { id } })
+    if (!wf) throw new NotFoundException('Workflow not found')
+    return wf
+  }
+
   async update(id: string, userId: string, dto: UpdateWorkflowDto): Promise<Workflow> {
     const wf = await this.findOne(id, userId)
     Object.assign(wf, {

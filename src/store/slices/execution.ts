@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand'
-import { FlowState, ExecutionState, ExecutionLogEntry, NodeExecutionResult } from '../../types'
+import { FlowState, ExecutionState, ExecutionLogEntry, NodeExecutionResult, LocalRun } from '../../types'
 import {
   buildExecutionOrder,
   getIncomingEdgeIds,
@@ -35,9 +35,14 @@ type ExecSliceKeys =
   | 'stepExecution'
   | 'toggleBreakpoint'
   | 'clearExecutionLogs'
+  | 'runHistory'
+  | 'clearRunHistory'
 
 export const createExecutionSlice: StateCreator<FlowState, [], [], Pick<FlowState, ExecSliceKeys>> = (set, get) => ({
   execution: initialExecution,
+  runHistory: [],
+
+  clearRunHistory: () => set({ runHistory: [] }),
 
   startExecution: async () => {
     abortCtrl?.abort()
@@ -107,7 +112,14 @@ export const createExecutionSlice: StateCreator<FlowState, [], [], Pick<FlowStat
       const startedAt = Date.now()
 
       try {
-        const { output, duration } = await simulateNodeExecution(node.type as string)
+        const { output, duration } = await simulateNodeExecution(
+            node.type as string,
+            (node.data.config ?? {}) as Record<string, unknown>,
+            get().execution.results[order[order.indexOf(nodeId) - 1]]?.output ?? null,
+            signal,
+            nodeId,
+            node.data.label,
+          )
         if (signal.aborted) return
 
         const result: NodeExecutionResult = { nodeId, status: 'success', output, duration, startedAt }
@@ -177,6 +189,37 @@ export const createExecutionSlice: StateCreator<FlowState, [], [], Pick<FlowStat
     }))
 
     const elapsed = Math.round((Date.now() - (get().execution.startedAt ?? Date.now())))
+
+    // ── Record completed run in local history ──────────────
+    const execSnap = get().execution
+    const localRun: LocalRun = {
+      id: `run-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      workflowName: get().workflowName,
+      status: failedNodes.size > 0 ? 'failed' : 'completed',
+      startedAt: execSnap.startedAt ?? Date.now(),
+      completedAt: Date.now(),
+      durationMs: elapsed,
+      nodeCount: order.length,
+      completedNodes: execSnap.completedNodes.size,
+      failedNodes: execSnap.failedNodes.size,
+      logs: execSnap.logs.map(l => ({
+        id: l.id,
+        timestamp: l.timestamp,
+        nodeId: l.nodeId,
+        nodeLabel: l.nodeLabel,
+        type: l.type,
+        message: l.message,
+        duration: l.duration,
+      })),
+      nodeResults: Object.fromEntries(
+        Object.entries(execSnap.results).map(([id, r]) => [
+          id,
+          { status: r.status, duration: r.duration, error: r.error },
+        ])
+      ),
+    }
+    set(s => ({ runHistory: [localRun, ...s.runHistory].slice(0, 100) }))
+
     addLog(
       createLogEntry('__system__', 'Executor',
         failedNodes.size > 0 ? 'error' : 'success',

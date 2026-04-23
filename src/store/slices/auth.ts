@@ -53,6 +53,20 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         realtimeService.disconnect()
         await authService.logout()
+        // Clear all user-scoped localStorage keys
+        const keysToRemove: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i)
+          if (k && k.startsWith('flow-storage-v2-')) keysToRemove.push(k)
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k))
+        // Reset flow store state in memory
+        const { useFlowStore } = await import('../index')
+        useFlowStore.setState({
+          nodes: [], edges: [], workflowName: 'Untitled Workflow',
+          savedWorkflowId: null, selectedNodeId: null,
+          templates: {}, versions: [], runHistory: [],
+        })
         set({ user: null, isLoggedIn: false })
       },
 

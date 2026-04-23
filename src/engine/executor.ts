@@ -1,4 +1,5 @@
 import { CustomNode, Edge, ExecutionLogEntry, ExecutionLogType } from '../types'
+import { getNode } from '../nodes/registry'
 
 // ── Topological sort (Kahn's algorithm) ───────────────────────
 
@@ -21,12 +22,14 @@ export function buildExecutionOrder(nodes: CustomNode[], edges: Edge[]): string[
     if (degree === 0) queue.push(id)
   }
 
-  // Prioritize input nodes first
+  // Prioritize trigger nodes first
   queue.sort((a, b) => {
     const na = nodes.find(n => n.id === a)
     const nb = nodes.find(n => n.id === b)
-    if (na?.type === 'input') return -1
-    if (nb?.type === 'input') return 1
+    const aIsTrigger = na?.type === 'input' || na?.type?.startsWith('trigger-')
+    const bIsTrigger = nb?.type === 'input' || nb?.type?.startsWith('trigger-')
+    if (aIsTrigger && !bIsTrigger) return -1
+    if (bIsTrigger && !aIsTrigger) return 1
     return 0
   })
 
@@ -55,13 +58,7 @@ export function getIncomingEdgeIds(nodeId: string, edges: Edge[]): string[] {
   return edges.filter(e => e.target === nodeId).map(e => e.id)
 }
 
-// ── Per-node mock execution ───────────────────────────────────
-
-interface NodeExecResult {
-  output: unknown
-  duration: number
-}
-
+// ── Per-node execution ────────────────────────────────────────
 const DELAY_RANGES: Record<string, [number, number]> = {
   input:      [200, 500],
   api:        [700, 1400],
@@ -106,10 +103,27 @@ const MOCK_OUTPUTS: Record<string, unknown> = {
   output:     { delivered: true, format: 'json', destination: 'webhook', bytes: 1280 },
 }
 
-export function simulateNodeExecution(nodeType: string): Promise<NodeExecResult> {
+export function simulateNodeExecution(
+  nodeType: string,
+  config: Record<string, unknown>,
+  input: unknown,
+  signal: AbortSignal,
+  nodeId: string,
+  nodeLabel: string,
+): Promise<{ output: unknown; duration: number }> {
+  const def = getNode(nodeType)
+
+  if (def) {
+    const start = Date.now()
+    return def.executor(config, input, { nodeId, nodeLabel, signal }).then(output => ({
+      output,
+      duration: Date.now() - start,
+    }))
+  }
+
+  // Fallback for legacy built-in types
   const [min, max] = DELAY_RANGES[nodeType] ?? [300, 800]
   const duration = min + Math.random() * (max - min)
-
   return new Promise(resolve =>
     setTimeout(() => {
       resolve({ output: MOCK_OUTPUTS[nodeType] ?? { result: 'ok' }, duration })

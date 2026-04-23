@@ -40,10 +40,11 @@ export class WebhooksService {
     })
 
     const run = await this.executionService.triggerRun({
-      workflowId:  wh.workflowId,
-      userId:      wh.userId,
-      triggerType: 'webhook',
-      triggerData: payload,
+      workflowId:      wh.workflowId,
+      userId:          wh.userId,
+      triggerType:     'webhook',
+      triggerData:     payload,
+      bypassOwnership: true,
     })
 
     return { runId: run.id }

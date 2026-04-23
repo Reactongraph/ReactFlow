@@ -16,6 +16,9 @@ export class Schedule {
   @JoinColumn({ name: 'workflow_id' })
   workflow: Workflow
 
+  @Column({ name: 'user_id', type: 'varchar', nullable: true })
+  userId: string | null
+
   @Column({ name: 'cron_expression', length: 100 })
   cronExpression: string
 

@@ -2,14 +2,8 @@ import { Node, Edge, NodeChange, EdgeChange, Connection, ReactFlowInstance } fro
 
 export type { Edge } from 'reactflow'
 
-export type NodeType =
-  | 'input'
-  | 'output'
-  | 'processing'
-  | 'api'
-  | 'transform'
-  | 'decision'
-  | 'ai'
+/** Legacy built-in types + any registered plugin type */
+export type NodeType = string
 
 export type NodeStatus = 'idle' | 'running' | 'success' | 'error' | 'warning'
 
@@ -105,6 +99,45 @@ export interface ExecutionState {
   isStepMode: boolean
 }
 
+// ── Run History (client-side) ─────────────────────────────────
+
+export type LocalRunStatus = 'completed' | 'failed'
+
+export interface LocalRunLog {
+  id: string
+  timestamp: number
+  nodeId: string
+  nodeLabel: string
+  type: ExecutionLogType
+  message: string
+  duration?: number
+}
+
+export interface LocalRun {
+  id: string
+  workflowName: string
+  status: LocalRunStatus
+  startedAt: number
+  completedAt: number
+  durationMs: number
+  nodeCount: number
+  completedNodes: number
+  failedNodes: number
+  logs: LocalRunLog[]
+  nodeResults: Record<string, { status: string; duration: number; error?: string }>
+}
+
+// ── Workflow Templates (multi-node) ──────────────────────────
+
+export interface WorkflowTemplate {
+  id: string
+  name: string
+  description: string
+  category: string
+  nodes: CustomNode[]
+  edges: Edge[]
+}
+
 // ── Versions ───────────────────────────────────────────────────
 
 export interface WorkflowVersion {
@@ -121,6 +154,7 @@ export interface WorkflowVersion {
 
 export interface FlowState {
   workflowName: string
+  savedWorkflowId: string | null        // backend UUID once saved
   nodes: CustomNode[]
   edges: Edge[]
   selectedNodeId: string | null
@@ -129,14 +163,16 @@ export interface FlowState {
   rfInstance: ReactFlowInstance | null
   setRfInstance: (inst: ReactFlowInstance) => void
 
-  // Workflow name
+  // Workflow name + backend sync
   setWorkflowName: (name: string) => void
+  setSavedWorkflowId: (id: string | null) => void
+  saveWorkflowToBackend: () => Promise<string>
 
   // Core flow
   onNodesChange: (changes: NodeChange[]) => void
   onEdgesChange: (changes: EdgeChange[]) => void
   onConnect: (connection: Connection) => void
-  addNode: (type: NodeType, position: { x: number; y: number }) => void
+  addNode: (type: string, position: { x: number; y: number }) => void
   deleteNode: (id: string) => void
   updateNode: (id: string, updates: Partial<CustomNode>) => void
   setSelectedNode: (id: string | null) => void
@@ -159,6 +195,10 @@ export interface FlowState {
   saveTemplate: (node: CustomNode) => void
   createFromTemplate: (templateId: string, position: { x: number; y: number }) => void
 
+  // Workflow Templates (multi-node, read-only presets)
+  workflowTemplates: WorkflowTemplate[]
+  loadWorkflowTemplate: (id: string) => void
+
   // Validation
   validation: ValidationState
   validateWorkflow: () => ValidationError[]
@@ -177,6 +217,10 @@ export interface FlowState {
   stepExecution: () => void
   toggleBreakpoint: (nodeId: string) => void
   clearExecutionLogs: () => void
+
+  // Run History (client-side)
+  runHistory: LocalRun[]
+  clearRunHistory: () => void
 
   // Versions
   versions: WorkflowVersion[]
@@ -223,3 +267,6 @@ export interface NodeDef {
   description: string
   color: string
 }
+
+// Re-export registry types for convenience
+export type { NodeDefinition, NodeCategory, FieldSchema, FieldType } from '../nodes/registry/types'

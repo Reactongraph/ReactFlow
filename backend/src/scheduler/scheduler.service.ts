@@ -47,8 +47,9 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       workflowId:     dto.workflowId,
       cronExpression: dto.cronExpression,
       label:          dto.label ?? null,
+      userId:         dto.userId,
     }))
-    this.registerTask(schedule, dto.userId)
+    this.registerTask(schedule)
     return schedule
   }
 
@@ -62,7 +63,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     if (!schedule) throw new Error('Schedule not found')
 
     if (enabled) {
-      this.registerTask(schedule, 'system')
+      this.registerTask(schedule)
     } else {
       this.tasks.get(id)?.stop()
       this.tasks.delete(id)
@@ -81,12 +82,12 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
   private async loadAndRegisterAll(): Promise<void> {
     const schedules = await this.repo.find({ where: { isEnabled: true } })
     for (const s of schedules) {
-      this.registerTask(s, 'system')
+      this.registerTask(s)
     }
     this.logger.log(`Loaded ${schedules.length} active schedules`)
   }
 
-  private registerTask(schedule: Schedule, userId: string): void {
+  private registerTask(schedule: Schedule): void {
     // Stop existing task if any
     this.tasks.get(schedule.id)?.stop()
 
@@ -95,14 +96,22 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       return
     }
 
+    // Use the stored owner userId; fall back to a no-op log if missing
+    const userId = schedule.userId
+    if (!userId) {
+      this.logger.warn(`Schedule ${schedule.id} has no userId — skipping registration`)
+      return
+    }
+
     const task = cron.schedule(schedule.cronExpression, async () => {
       this.logger.log(`Schedule ${schedule.id} triggered — workflow ${schedule.workflowId}`)
       try {
         await this.executionService.triggerRun({
-          workflowId:  schedule.workflowId,
+          workflowId:      schedule.workflowId,
           userId,
-          triggerType: 'scheduled',
-          triggerData: { scheduleId: schedule.id, scheduledAt: new Date().toISOString() },
+          triggerType:     'scheduled',
+          triggerData:     { scheduleId: schedule.id, scheduledAt: new Date().toISOString() },
+          bypassOwnership: true,
         })
         await this.repo.update(schedule.id, {
           lastRunAt: new Date(),
