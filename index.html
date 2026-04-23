@@ -2,11 +2,139 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>React Flow Workflow Builder</title>
+
+    <!-- ── Primary Meta ──────────────────────────────────────── -->
+    <title>FlowBuilder — Visual Workflow Automation Platform</title>
+    <meta name="description" content="FlowBuilder is a professional visual workflow automation platform. Build, run, and monitor complex automations with 47+ node types, AI-powered generation, and real-time execution — no code required." />
+    <meta name="keywords" content="workflow automation, visual workflow builder, no-code automation, workflow editor, API integration, AI workflow, node-based editor, process automation, workflow platform, React Flow" />
+    <meta name="author" content="FlowBuilder" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- ── Canonical ─────────────────────────────────────────── -->
+    <link rel="canonical" href="https://flowbuilder.app/" />
+
+    <!-- ── Open Graph (Facebook, LinkedIn, Slack) ────────────── -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:site_name"   content="FlowBuilder" />
+    <meta property="og:title"       content="FlowBuilder — Visual Workflow Automation Platform" />
+    <meta property="og:description" content="Build powerful automations visually. Connect APIs, databases, AI models, and communication tools with 47+ built-in nodes. No code required." />
+    <meta property="og:url"         content="https://flowbuilder.app/" />
+    <meta property="og:image"       content="https://flowbuilder.app/og-image.png" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"   content="FlowBuilder visual workflow editor showing connected nodes on a canvas" />
+    <meta property="og:locale"      content="en_US" />
+
+    <!-- ── Twitter Card ──────────────────────────────────────── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@flowbuilder" />
+    <meta name="twitter:creator"     content="@flowbuilder" />
+    <meta name="twitter:title"       content="FlowBuilder — Visual Workflow Automation Platform" />
+    <meta name="twitter:description" content="Build powerful automations visually. 47+ node types, AI-powered generation, real-time execution. No code required." />
+    <meta name="twitter:image"       content="https://flowbuilder.app/og-image.png" />
+    <meta name="twitter:image:alt"   content="FlowBuilder visual workflow editor" />
+
+    <!-- ── Favicons ──────────────────────────────────────────── -->
+    <link rel="icon"             type="image/svg+xml"  href="/favicon.svg" />
+    <link rel="icon"             type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon"             type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180"       href="/apple-touch-icon.png" />
+    <link rel="manifest"                               href="/site.webmanifest" />
+    <link rel="mask-icon"        href="/safari-pinned-tab.svg" color="#4f46e5" />
+    <meta name="msapplication-TileColor" content="#4f46e5" />
+
+    <!-- ── Performance: preconnect to external origins ──────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://api.openai.com" />
+
+    <!-- ── Structured Data: SoftwareApplication ─────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "FlowBuilder",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "url": "https://flowbuilder.app/",
+      "description": "FlowBuilder is a professional visual workflow automation platform. Build, run, and monitor complex automations with 47+ node types, AI-powered generation, and real-time execution.",
+      "screenshot": "https://flowbuilder.app/og-image.png",
+      "featureList": [
+        "47 built-in node types across 10 categories",
+        "AI-powered workflow generation with GPT-4o",
+        "Visual drag-and-drop canvas with real-time execution",
+        "PostgreSQL, MongoDB, Redis database integrations",
+        "Slack, Discord, Email communication nodes",
+        "Breakpoint debugging and step-through execution",
+        "Version history and workflow templates",
+        "Real-time collaboration via WebSockets",
+        "Self-hosted with full data ownership"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Open source, self-hosted"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "FlowBuilder",
+        "url": "https://flowbuilder.app/"
+      }
+    }
+    </script>
+
+    <!-- ── Structured Data: WebApplication ───────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "FlowBuilder",
+      "url": "https://flowbuilder.app/",
+      "description": "Visual workflow automation platform with 47+ node types, AI generation, and real-time execution.",
+      "applicationCategory": "Productivity",
+      "browserRequirements": "Requires JavaScript. Requires a modern browser.",
+      "inLanguage": "en-US",
+      "isAccessibleForFree": true,
+      "keywords": "workflow automation, no-code, API integration, AI workflow, visual editor"
+    }
+    </script>
+
+    <!-- ── Structured Data: BreadcrumbList ───────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://flowbuilder.app/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Workflow Editor",
+          "item": "https://flowbuilder.app/editor"
+        }
+      ]
+    }
+    </script>
   </head>
+
   <body>
+    <!-- Accessible no-script fallback -->
+    <noscript>
+      <div style="font-family:sans-serif;padding:2rem;text-align:center;">
+        <h1>FlowBuilder requires JavaScript</h1>
+        <p>Please enable JavaScript in your browser to use the FlowBuilder workflow automation platform.</p>
+      </div>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
