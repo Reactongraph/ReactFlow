@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#1e1b4b"/>
+      <stop offset="50%"  stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <!-- Accent glow -->
+    <radialGradient id="glow1" cx="25%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="80%" cy="75%" r="35%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Edge gradient -->
+    <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#818cf8" stop-opacity="0"/>
+      <stop offset="50%"  stop-color="#818cf8" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Glow orbs -->
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <!-- Subtle grid -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="0.3" opacity="0.06"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- ── Left content ─────────────────────────────────────── -->
+
+  <!-- Logo mark -->
+  <rect x="80" y="80" width="52" height="52" rx="14" fill="#4f46e5"/>
+  <!-- Workflow icon nodes -->
+  <circle cx="96"  cy="106" r="5" fill="white"/>
+  <circle cx="106" cy="96"  r="5" fill="white"/>
+  <circle cx="116" cy="116" r="5" fill="white"/>
+  <circle cx="126" cy="106" r="5" fill="white"/>
+  <line x1="101" y1="103" x2="103" y2="99"  stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="111" y1="99"  x2="113" y2="103" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="101" y1="109" x2="113" y2="113" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="119" y1="113" x2="121" y2="109" stroke="white" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Brand name -->
+  <text x="148" y="114" font-family="system-ui,-apple-system,sans-serif" font-size="28" font-weight="700" fill="white">FlowBuilder</text>
+
+  <!-- Badge -->
+  <rect x="80" y="160" width="260" height="32" rx="16" fill="#4f46e5" fill-opacity="0.25" stroke="#818cf8" stroke-width="1" stroke-opacity="0.4"/>
+  <circle cx="102" cy="176" r="5" fill="#34d399"/>
+  <text x="116" y="181" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#a5b4fc">Workflow Automation Platform</text>
+
+  <!-- Headline -->
+  <text x="80" y="260" font-family="system-ui,-apple-system,sans-serif" font-size="58" font-weight="800" fill="white">Build powerful</text>
+  <text x="80" y="330" font-family="system-ui,-apple-system,sans-serif" font-size="58" font-weight="800" fill="url(#edgeGrad)">automations visually</text>
+
+  <!-- Subtext -->
+  <text x="80" y="390" font-family="system-ui,-apple-system,sans-serif" font-size="22" fill="#94a3b8">Connect APIs, databases, AI models and more.</text>
+  <text x="80" y="420" font-family="system-ui,-apple-system,sans-serif" font-size="22" fill="#94a3b8">No code required.</text>
+
+  <!-- Feature pills -->
+  <!-- Pill 1 -->
+  <rect x="80"  y="470" width="148" height="36" rx="18" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15" stroke-width="1"/>
+  <text x="104" y="493" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#c7d2fe">⚡ 47+ Node Types</text>
+  <!-- Pill 2 -->
+  <rect x="244" y="470" width="148" height="36" rx="18" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15" stroke-width="1"/>
+  <text x="268" y="493" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#c7d2fe">✨ AI Powered</text>
+  <!-- Pill 3 -->
+  <rect x="408" y="470" width="168" height="36" rx="18" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15" stroke-width="1"/>
+  <text x="432" y="493" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#c7d2fe">🔀 Visual Editor</text>
+
+  <!-- ── Right: workflow canvas graphic ──────────────────── -->
+
+  <!-- Canvas background -->
+  <rect x="680" y="60" width="460" height="510" rx="20" fill="white" fill-opacity="0.04" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- Node: Webhook Trigger -->
+  <rect x="710" y="110" width="180" height="52" rx="12" fill="#1e40af" fill-opacity="0.8" stroke="#3b82f6" stroke-width="1"/>
+  <rect x="718" y="118" width="28" height="28" rx="7" fill="#3b82f6"/>
+  <text x="756" y="136" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="white">Webhook Trigger</text>
+  <text x="756" y="152" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#93c5fd">POST /webhook/alert</text>
+
+  <!-- Node: AI Classify -->
+  <rect x="710" y="210" width="180" height="52" rx="12" fill="#4c1d95" fill-opacity="0.8" stroke="#8b5cf6" stroke-width="1"/>
+  <rect x="718" y="218" width="28" height="28" rx="7" fill="#7c3aed"/>
+  <text x="756" y="236" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="white">AI Classify</text>
+  <text x="756" y="252" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#c4b5fd">GPT-4o · critical/warning</text>
+
+  <!-- Node: IF Condition -->
+  <rect x="710" y="310" width="180" height="52" rx="12" fill="#881337" fill-opacity="0.8" stroke="#f43f5e" stroke-width="1"/>
+  <rect x="718" y="318" width="28" height="28" rx="7" fill="#e11d48"/>
+  <text x="756" y="336" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="white">IF Condition</text>
+  <text x="756" y="352" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#fda4af">data.severity === "high"</text>
+
+  <!-- Node: Slack Alert -->
+  <rect x="910" y="210" width="180" height="52" rx="12" fill="#1e3a5f" fill-opacity="0.8" stroke="#0ea5e9" stroke-width="1"/>
+  <rect x="918" y="218" width="28" height="28" rx="7" fill="#0284c7"/>
+  <text x="956" y="236" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="white">Slack Alert</text>
+  <text x="956" y="252" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#7dd3fc">#incidents channel</text>
+
+  <!-- Node: PostgreSQL -->
+  <rect x="910" y="310" width="180" height="52" rx="12" fill="#1e3a8a" fill-opacity="0.8" stroke="#6366f1" stroke-width="1"/>
+  <rect x="918" y="318" width="28" height="28" rx="7" fill="#4f46e5"/>
+  <text x="956" y="336" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="white">PostgreSQL</text>
+  <text x="956" y="352" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a5b4fc">INSERT INTO incidents</text>
+
+  <!-- Node: Output -->
+  <rect x="810" y="430" width="180" height="52" rx="12" fill="#064e3b" fill-opacity="0.8" stroke="#10b981" stroke-width="1"/>
+  <rect x="818" y="438" width="28" height="28" rx="7" fill="#059669"/>
+  <text x="856" y="456" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="white">Output Viewer</text>
+  <text x="856" y="472" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#6ee7b7">Workflow complete ✓</text>
+
+  <!-- Edges -->
+  <!-- Webhook → AI Classify -->
+  <path d="M 800 162 Q 800 186 800 210" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.6"/>
+  <!-- AI Classify → IF -->
+  <path d="M 800 262 Q 800 286 800 310" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.6"/>
+  <!-- AI Classify → Slack -->
+  <path d="M 890 236 Q 900 236 910 236" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.6"/>
+  <!-- IF → PostgreSQL -->
+  <path d="M 890 336 Q 900 336 910 336" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.6"/>
+  <!-- Slack → Output -->
+  <path d="M 1000 262 Q 1000 456 990 456" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.5"/>
+  <!-- PostgreSQL → Output -->
+  <path d="M 1000 362 Q 1000 456 990 456" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.5"/>
+
+  <!-- Running badge -->
+  <rect x="1060" y="510" width="68" height="26" rx="13" fill="#065f46" fill-opacity="0.8" stroke="#10b981" stroke-width="1"/>
+  <circle cx="1075" cy="523" r="4" fill="#34d399"/>
+  <text x="1084" y="527" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="700" fill="#34d399">Running</text>
+
+  <!-- URL watermark -->
+  <text x="600" y="610" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="16" fill="#475569">flowbuilder.app</text>
+</svg>

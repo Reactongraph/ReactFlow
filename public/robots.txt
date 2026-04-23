@@ -5,5 +5,5 @@ Allow: /
 Disallow: /api/
 Disallow: /auth/
 
-# Sitemap location
-Sitemap: https://flowbuilder.app/sitemap.xml
+# Update the URL below to your actual deployed domain
+Sitemap: /sitemap.xml
