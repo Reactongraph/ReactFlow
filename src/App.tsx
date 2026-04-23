@@ -12,12 +12,14 @@ import RunHistoryPanel from './components/panels/RunHistoryPanel'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useValidation }        from './hooks/useValidation'
 import { useAuthStore }         from './store/slices/auth'
+import { useWalkthrough, hasTourBeenSeen } from './hooks/useWalkthrough'
 
 const App: React.FC = () => {
-  const [cmdPaletteOpen,  setCmdPaletteOpen]  = useState(false)
-  const [showRunHistory,  setShowRunHistory]   = useState(false)
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false)
+  const [showRunHistory, setShowRunHistory]  = useState(false)
 
   const { isLoggedIn, loadUser } = useAuthStore()
+  const { start, restart }       = useWalkthrough()
 
   const openPalette  = useCallback(() => setCmdPaletteOpen(true),  [])
   const closePalette = useCallback(() => setCmdPaletteOpen(false), [])
@@ -27,6 +29,28 @@ const App: React.FC = () => {
 
   // Restore session on mount
   useEffect(() => { loadUser() }, [loadUser])
+
+  // Auto-start tour on first login — slight delay so the UI is fully painted
+  useEffect(() => {
+    if (!isLoggedIn) return
+    if (!hasTourBeenSeen()) {
+      const t = setTimeout(() => start(), 800)
+      return () => clearTimeout(t)
+    }
+  }, [isLoggedIn, start])
+
+  // Keyboard shortcut: ? restarts the tour
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tag = (e.target as HTMLElement).tagName
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') restart()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isLoggedIn, restart])
 
   // ── Auth gate ─────────────────────────────────────────────────
   if (!isLoggedIn) {
@@ -71,10 +95,17 @@ const App: React.FC = () => {
 
       {/* ── Run history modal ────────────────────────────────── */}
       {showRunHistory && (
-        <RunHistoryPanel
-          onClose={() => setShowRunHistory(false)}
-        />
+        <RunHistoryPanel onClose={() => setShowRunHistory(false)} />
       )}
+
+      {/* ── Help / Tour button ───────────────────────────────── */}
+      <button
+        onClick={restart}
+        title="Restart tour (or press ?)"
+        className="fixed bottom-10 right-4 z-40 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 transition-all hover:bg-indigo-700 hover:scale-110 text-sm font-bold"
+      >
+        ?
+      </button>
     </div>
   )
 }

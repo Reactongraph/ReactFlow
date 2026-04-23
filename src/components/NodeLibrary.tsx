@@ -322,7 +322,7 @@ const NodeLibrary: React.FC = () => {
   [filteredCategories])
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
+    <aside data-tour="node-library" className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
 
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="border-b border-slate-200 px-3 pb-3 pt-3">

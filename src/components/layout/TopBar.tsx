@@ -114,12 +114,100 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
   }
 
   const handleApplyAiWorkflow = (wf: GeneratedWorkflow) => {
-    const mappedNodes = wf.nodes.map(n => ({
-      id: n.id, type: 'customNode', position: n.position,
-      data: { label: n.label, nodeType: n.type, ...n.data, inputs: [], outputs: [], status: 'idle' as const },
+    // Map AI node type strings to registered plugin types
+    const typeMap: Record<string, string> = {
+      // Triggers
+      webhook: 'trigger-webhook', 'webhook-trigger': 'trigger-webhook',
+      schedule: 'trigger-schedule', cron: 'trigger-schedule', timer: 'trigger-schedule',
+      'email-trigger': 'trigger-email', 'manual-trigger': 'trigger-manual',
+      manual: 'trigger-manual', input: 'input',
+      // API
+      http: 'http-request', 'http-request': 'http-request', api: 'api',
+      'rest-api': 'rest-api', graphql: 'graphql',
+      'webhook-response': 'webhook-response',
+      // AI
+      'ai-generate': 'ai-text-gen', 'text-generation': 'ai-text-gen', 'ai-text': 'ai-text-gen',
+      summarize: 'ai-summarize', 'ai-summarize': 'ai-summarize', summary: 'ai-summarize',
+      classify: 'ai-classify', 'ai-classify': 'ai-classify', classification: 'ai-classify',
+      embedding: 'ai-embedding', ai: 'ai',
+      // Logic
+      if: 'logic-if', condition: 'logic-if', 'if-condition': 'logic-if', branch: 'logic-if',
+      switch: 'logic-switch', router: 'logic-switch',
+      loop: 'logic-loop', iterate: 'logic-loop',
+      delay: 'logic-delay', wait: 'logic-delay',
+      retry: 'logic-retry',
+      decision: 'decision',
+      // Transform
+      transform: 'transform', 'json-transform': 'transform-json', 'transform-json': 'transform-json',
+      'csv-parser': 'transform-csv', csv: 'transform-csv',
+      'text-parser': 'transform-text', regex: 'transform-regex',
+      'format-converter': 'transform-format', format: 'transform-format',
+      processing: 'processing', filter: 'transform-json', map: 'transform-json',
+      // Database
+      postgres: 'db-postgres', postgresql: 'db-postgres', sql: 'db-postgres', database: 'db-postgres',
+      mongodb: 'db-mongodb', mongo: 'db-mongodb',
+      redis: 'db-redis', cache: 'db-redis',
+      // Communication
+      email: 'comm-email', 'send-email': 'comm-email', 'email-sender': 'comm-email',
+      slack: 'comm-slack', 'slack-message': 'comm-slack',
+      discord: 'comm-discord',
+      notification: 'comm-push', push: 'comm-push',
+      // Files
+      upload: 'file-upload', 'file-upload': 'file-upload',
+      download: 'file-download', 'file-download': 'file-download',
+      pdf: 'file-pdf', 'pdf-parser': 'file-pdf',
+      image: 'file-image', 'image-processor': 'file-image',
+      // Utilities
+      date: 'util-date', 'date-formatter': 'util-date',
+      uuid: 'util-uuid',
+      random: 'util-random',
+      math: 'util-math', calculator: 'util-math',
+      string: 'util-string', 'string-manipulator': 'util-string',
+      // Debug / Output
+      log: 'debug-log', logger: 'debug-log',
+      debug: 'debug-inspect', inspect: 'debug-inspect',
+      output: 'output', 'output-viewer': 'debug-output', viewer: 'debug-output',
+      'test-data': 'debug-test-data',
+    }
+
+    const resolveType = (raw: string): string => {
+      const key = raw.toLowerCase().replace(/[_\s]+/g, '-')
+      return typeMap[key] ?? typeMap[key.replace(/-/g, '')] ?? raw
+    }
+
+    const mappedNodes = wf.nodes.map((n, i) => {
+      const resolvedType = resolveType(n.type)
+      // Space nodes evenly if AI didn't provide positions
+      const position = n.position ?? { x: 100 + i * 260, y: 200 }
+      return {
+        id: n.id,
+        type: resolvedType,
+        position,
+        data: {
+          label: n.label,
+          status: 'idle' as const,
+          description: '',
+          config: (n.data ?? {}) as Record<string, unknown>,
+        },
+      }
+    })
+
+    const mappedEdges = wf.edges.map(e => ({
+      ...e,
+      type: 'smoothstep',
+      animated: false,
+      style: { stroke: '#94a3b8', strokeWidth: 2 },
     }))
-    importWorkflow(JSON.stringify({ nodes: mappedNodes, edges: wf.edges, workflowName: wf.name }))
+
+    importWorkflow(JSON.stringify({
+      version: '2.0',
+      workflowName: wf.name,
+      nodes: mappedNodes,
+      edges: mappedEdges,
+    }))
     setShowAiBuilder(false)
+    // Fit view after nodes are placed
+    setTimeout(() => rfInstance?.fitView({ padding: 0.15, duration: 400 }), 100)
   }
 
   const handleRun = () => { if (isPaused) resumeExecution(); else startExecution() }
@@ -222,7 +310,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
         <div className="mx-1.5 h-4 w-px bg-slate-200 shrink-0" />
 
         {/* ── Execution controls ────────────────────────────── */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 shrink-0">
+        <div data-tour="run-controls" className="flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 shrink-0">
           <Tooltip content={isPaused ? 'Resume' : 'Run'} side="bottom">
             <button onClick={handleRun} disabled={isRunning || isEmpty}
               className={[
@@ -268,7 +356,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
 
         {/* AI Builder */}
         <Tooltip content="AI Workflow Builder" side="bottom">
-          <button onClick={() => setShowAiBuilder(true)}
+          <button data-tour="ai-builder" onClick={() => setShowAiBuilder(true)}
             className="flex h-7 w-7 items-center justify-center rounded text-indigo-500 hover:bg-indigo-50 transition-colors">
             <Sparkles size={14} />
           </button>
@@ -276,7 +364,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
 
         {/* Templates */}
         <Tooltip content="Node Templates" side="bottom">
-          <button onClick={() => setShowTemplates(true)}
+          <button data-tour="templates-btn" onClick={() => setShowTemplates(true)}
             className="flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 transition-colors">
             <BookMarked size={14} />
           </button>
@@ -284,7 +372,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
 
         {/* Version History */}
         <Tooltip content="Version History" side="bottom">
-          <button onClick={() => setShowVersions(true)}
+          <button data-tour="versions-btn" onClick={() => setShowVersions(true)}
             className="flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 transition-colors">
             <GitBranch size={14} />
           </button>
@@ -300,7 +388,7 @@ const TopBar: React.FC<TopBarProps> = ({ onOpenCommandPalette, onShowRunHistory 
 
         {/* Monitoring */}
         <Tooltip content="Monitoring" side="bottom">
-          <button onClick={() => setShowMonitoring(true)}
+          <button data-tour="monitoring-btn" onClick={() => setShowMonitoring(true)}
             className="flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 transition-colors">
             <Activity size={14} />
           </button>

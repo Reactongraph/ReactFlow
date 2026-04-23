@@ -163,7 +163,7 @@ const FlowCanvas: React.FC = () => {
   }, [])
 
   return (
-    <div className="relative h-full w-full">
+    <div data-tour="canvas" className="relative h-full w-full">
       <ReactFlow
         nodes={nodes}
         edges={displayEdges}

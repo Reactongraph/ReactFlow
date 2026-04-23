@@ -130,6 +130,7 @@ const ExecutionPanel: React.FC = () => {
 
   return (
     <div
+      data-tour="execution-panel"
       className={[
         'flex shrink-0 flex-col border-t border-slate-200 bg-white transition-all duration-300',
         open ? 'h-52' : 'h-8',

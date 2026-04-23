@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { Sparkles, Send, X, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Sparkles, Send, X, Loader2, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { aiBuilderService, GeneratedWorkflow } from '../../services/ai-builder.service'
+import { getNode } from '../../nodes'
 
 const EXAMPLE_PROMPTS = [
   'Fetch weather data from an API and send an email summary',
@@ -108,24 +109,38 @@ export const AiWorkflowBuilder: React.FC<Props> = ({ onClose, onApply }) => {
 
           {/* Result preview */}
           {result && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 size={14} className="text-emerald-600" />
-                <span className="text-sm font-semibold text-emerald-800">{result.name}</span>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 size={14} className="text-emerald-500" />
+                <span className="text-sm font-semibold text-slate-800">{result.name}</span>
+                <span className="ml-auto text-xs text-slate-400">
+                  {result.nodes.length} nodes · {result.edges.length} edges
+                </span>
               </div>
-              <div className="flex gap-4 text-xs text-emerald-700">
-                <span>{result.nodes.length} nodes</span>
-                <span>{result.edges.length} connections</span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {result.nodes.map(n => (
-                  <span
-                    key={n.id}
-                    className="text-[10px] px-2 py-0.5 bg-white border border-emerald-200 rounded-full text-emerald-700"
-                  >
-                    {n.label}
-                  </span>
-                ))}
+              {/* Node flow preview with registry colors */}
+              <div className="flex items-center gap-1 flex-wrap">
+                {result.nodes.map((n, i) => {
+                  // Resolve type the same way TopBar does
+                  const key = n.type.toLowerCase().replace(/[_\s]+/g, '-')
+                  const def = getNode(key) ?? getNode(key.replace(/-/g, ''))
+                  return (
+                    <React.Fragment key={n.id}>
+                      <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
+                        {def ? (
+                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-white bg-gradient-to-br ${def.color}`}>
+                            {def.icon}
+                          </span>
+                        ) : (
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-200" />
+                        )}
+                        <span className="text-xs font-medium text-slate-700 whitespace-nowrap">{n.label}</span>
+                      </div>
+                      {i < result.nodes.length - 1 && (
+                        <ArrowRight size={12} className="text-slate-300 shrink-0" />
+                      )}
+                    </React.Fragment>
+                  )
+                })}
               </div>
             </div>
           )}
